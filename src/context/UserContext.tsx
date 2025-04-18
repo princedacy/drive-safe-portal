@@ -2,16 +2,23 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { User } from "./AuthContext";
 
+// Extended user type with admin properties
+interface ExtendedUser extends User {
+  address?: string;
+  type?: string;
+  phone?: string;
+}
+
 interface UserContextType {
-  users: User[];
-  addUser: (user: Omit<User, "id">) => void;
-  updateUser: (user: User) => void;
+  users: ExtendedUser[];
+  addUser: (user: Omit<ExtendedUser, "id">) => void;
+  updateUser: (user: ExtendedUser) => void;
   deleteUser: (userId: string) => void;
   sendInviteEmail: (email: string, role: User["role"]) => Promise<void>;
 }
 
 // Sample users
-const MOCK_USERS: User[] = [
+const MOCK_USERS: ExtendedUser[] = [
   {
     id: "1",
     email: "superadmin@example.com",
@@ -23,6 +30,9 @@ const MOCK_USERS: User[] = [
     email: "admin@example.com",
     name: "Admin User",
     role: "admin",
+    address: "New York, USA",
+    type: "TESTING_CENTER",
+    phone: "1234567890",
   },
   {
     id: "3",
@@ -43,15 +53,15 @@ const MOCK_USERS: User[] = [
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<ExtendedUser[]>([]);
 
   useEffect(() => {
     // Load mock users
     setUsers(MOCK_USERS);
   }, []);
 
-  const addUser = (userData: Omit<User, "id">) => {
-    const newUser: User = {
+  const addUser = (userData: Omit<ExtendedUser, "id">) => {
+    const newUser: ExtendedUser = {
       ...userData,
       id: `user${Date.now()}`,
     };
@@ -59,7 +69,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUsers((prevUsers) => [...prevUsers, newUser]);
   };
 
-  const updateUser = (updatedUser: User) => {
+  const updateUser = (updatedUser: ExtendedUser) => {
     setUsers((prevUsers) =>
       prevUsers.map((user) => 
         user.id === updatedUser.id ? updatedUser : user
@@ -78,7 +88,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     console.log(`Email invitation sent to ${email} for role ${role}`);
     
     // Create a placeholder user
-    const newUser: User = {
+    const newUser: ExtendedUser = {
       id: `user${Date.now()}`,
       email,
       name: email.split('@')[0], // Default name from email

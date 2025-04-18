@@ -4,6 +4,13 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { User } from "@/context/AuthContext";
 
+// Ensure the User type has the admin properties
+export interface ExtendedUser extends User {
+  address?: string;
+  type?: string;
+  phone?: string;
+}
+
 interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: Array<User["role"]>;

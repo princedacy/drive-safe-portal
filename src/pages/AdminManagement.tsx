@@ -7,16 +7,41 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, UserPlus, Mail, Trash2, Shield } from "lucide-react";
+import { Search, UserPlus, Save, Trash2, Shield } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Define schema for admin creation form
+const adminFormSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  address: z.string().min(5, { message: "Address must be at least 5 characters" }),
+  type: z.string().min(2, { message: "Type must be at least 2 characters" }),
+  phone: z.string().min(10, { message: "Phone must be at least 10 characters" }),
+  email: z.string().email({ message: "Please enter a valid email" }),
+});
+
+type AdminFormValues = z.infer<typeof adminFormSchema>;
 
 export default function AdminManagement() {
-  const { users, sendInviteEmail, deleteUser } = useUsers();
+  const { users, addUser, deleteUser } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
-  const [newAdminEmail, setNewAdminEmail] = useState("");
-  const [isInviting, setIsInviting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
+  
+  // Setup form with react-hook-form and zod validation
+  const form = useForm<AdminFormValues>({
+    resolver: zodResolver(adminFormSchema),
+    defaultValues: {
+      name: "",
+      address: "",
+      type: "TESTING_CENTER", // Default value
+      phone: "",
+      email: "",
+    },
+  });
   
   // Filter only admin users
   const adminUsers = users.filter((user) => 
@@ -25,48 +50,23 @@ export default function AdminManagement() {
      user.email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
   
-  const handleInviteAdmin = async () => {
-    if (!newAdminEmail.trim()) {
-      toast({
-        title: "Email required",
-        description: "Please enter an email address.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleCreateAdmin = (data: AdminFormValues) => {
+    addUser({
+      name: data.name,
+      email: data.email,
+      role: "admin",
+      address: data.address,
+      type: data.type,
+      phone: data.phone,
+    });
     
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(newAdminEmail)) {
-      toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address.",
-        variant: "destructive",
-      });
-      return;
-    }
+    toast({
+      title: "Admin created",
+      description: `${data.name} has been added as an admin.`,
+    });
     
-    setIsInviting(true);
-    
-    try {
-      await sendInviteEmail(newAdminEmail, "admin");
-      
-      toast({
-        title: "Admin invitation sent",
-        description: `An invitation has been sent to ${newAdminEmail}.`,
-      });
-      
-      setNewAdminEmail("");
-      setDialogOpen(false);
-    } catch (error) {
-      toast({
-        title: "Error sending invitation",
-        description: "There was an error sending the invitation. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsInviting(false);
-    }
+    form.reset();
+    setDialogOpen(false);
   };
   
   const handleDeleteAdmin = (userId: string, userName: string) => {
@@ -87,41 +87,96 @@ export default function AdminManagement() {
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="mr-2 h-4 w-4" />
-                Invite Admin
+                Create Admin
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Invite New Admin</DialogTitle>
+                <DialogTitle>Create New Admin</DialogTitle>
                 <DialogDescription>
-                  Send an invitation email to add a new administrator to the system.
+                  Fill in the details to create a new admin account.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="admin@example.com"
-                    value={newAdminEmail}
-                    onChange={(e) => setNewAdminEmail(e.target.value)}
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleCreateAdmin)} className="space-y-4 py-2">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Organization Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter organization name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button 
-                  onClick={handleInviteAdmin} 
-                  disabled={isInviting}
-                >
-                  {isInviting ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
-                  ) : (
-                    <Mail className="mr-2 h-4 w-4" />
-                  )}
-                  Send Invitation
-                </Button>
-              </DialogFooter>
+                  
+                  <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Type</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter organization type" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter phone number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter email address" type="email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <DialogFooter className="pt-4">
+                    <Button type="submit">
+                      <Save className="mr-2 h-4 w-4" />
+                      Create Admin
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>
