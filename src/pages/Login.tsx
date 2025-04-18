@@ -24,10 +24,10 @@ export default function Login() {
     try {
       await login(email, password);
       navigate(from, { replace: true });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "Please check your credentials and try again.",
+        description: error.response?.data?.message || "Please check your credentials and try again.",
         variant: "destructive",
       });
     }

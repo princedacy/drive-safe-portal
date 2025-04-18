@@ -1,5 +1,7 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import axios from "axios";
+
+const API_BASE_URL = "https://dev.backend.ikizamini.hillygeeks.com/api/v1";
 
 type UserRole = "superadmin" | "admin" | "user";
 
@@ -17,63 +19,62 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   magicLinkLogin: (token: string) => Promise<void>;
+  token: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demonstration
-const MOCK_USERS: User[] = [
-  {
-    id: "1",
-    email: "superadmin@example.com",
-    name: "Super Admin",
-    role: "superadmin",
+// Create axios instance with base configuration
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
   },
-  {
-    id: "2",
-    email: "admin@example.com",
-    name: "Admin User",
-    role: "admin",
-  },
-  {
-    id: "3",
-    email: "user@example.com",
-    name: "Test User",
-    role: "user",
-    assignedExams: ["exam1", "exam2"],
-  },
-];
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for saved user in localStorage on init
+    // Check for saved token and user in localStorage on init
+    const savedToken = localStorage.getItem("authToken");
     const savedUser = localStorage.getItem("driveSafeUser");
+    
+    if (savedToken) {
+      setToken(savedToken);
+      api.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+    }
+    
     if (savedUser) {
       setCurrentUser(JSON.parse(savedUser));
     }
+    
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await api.post('/auth/login', {
+        email,
+        password,
+      });
+
+      const { token: authToken, user } = response.data;
       
-      // Find user with matching email
-      const user = MOCK_USERS.find((u) => u.email === email);
+      // Save token and update axios default headers
+      setToken(authToken);
+      api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+      localStorage.setItem("authToken", authToken);
       
-      if (!user) {
-        throw new Error("Invalid credentials");
-      }
-      
-      // In a real app, you'd verify the password here
-      // For demo, we'll just log in the user
+      // Save user data
       setCurrentUser(user);
       localStorage.setItem("driveSafeUser", JSON.stringify(user));
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -82,34 +83,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
-      setCurrentUser(null);
-      localStorage.removeItem("driveSafeUser");
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
     } finally {
+      // Clear local storage and state regardless of API call success
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("driveSafeUser");
+      setCurrentUser(null);
+      setToken(null);
+      delete api.defaults.headers.common['Authorization'];
       setIsLoading(false);
     }
   };
 
   const magicLinkLogin = async (token: string) => {
+    // If your API supports magic link login, implement it here
+    // For now, we'll keep it as a placeholder
     setIsLoading(true);
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // In a real app, you'd verify the token with your backend
-      // For demo, we'll just log in a test user
-      const user = MOCK_USERS.find((u) => u.role === "user");
-      
-      if (!user) {
-        throw new Error("Invalid magic link");
-      }
-      
-      setCurrentUser(user);
-      localStorage.setItem("driveSafeUser", JSON.stringify(user));
-    } finally {
+      // Add your magic link verification endpoint here
+      console.warn('Magic link login not implemented with external API');
       setIsLoading(false);
+    } catch (error) {
+      setIsLoading(false);
+      throw error;
     }
   };
 
@@ -121,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         magicLinkLogin,
+        token,
       }}
     >
       {children}
