@@ -1,8 +1,14 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,7 +21,7 @@ export default function MagicLinkLogin() {
 
   useEffect(() => {
     const token = searchParams.get("token");
-    
+
     if (!token) {
       setError("Invalid login link. Please request a new one.");
       return;
@@ -47,7 +53,9 @@ export default function MagicLinkLogin() {
       <div className="w-full max-w-md">
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">DriveSafe Portal</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">
+              Ikizamini
+            </CardTitle>
             <CardDescription className="text-center">
               Magic Link Login
             </CardDescription>

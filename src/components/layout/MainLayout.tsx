@@ -1,8 +1,15 @@
-
 import { ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { LogOut, User, Settings, FileQuestion, Users, BookOpen, Home } from "lucide-react";
+import {
+  LogOut,
+  User,
+  Settings,
+  FileQuestion,
+  Users,
+  BookOpen,
+  Home,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,7 +34,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     navigate("/login");
   };
 
-  const isAdminOrAbove = currentUser?.role === "admin" || currentUser?.role === "superadmin";
+  const isAdminOrAbove =
+    currentUser?.role === "admin" || currentUser?.role === "superadmin";
   const isSuperAdmin = currentUser?.role === "superadmin";
 
   return (
@@ -35,9 +43,9 @@ export function MainLayout({ children }: MainLayoutProps) {
       {/* Header */}
       <header className="bg-primary text-primary-foreground py-4 px-6 flex justify-between items-center shadow-md">
         <div className="flex items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="mr-2 text-primary-foreground hover:bg-primary hover:text-primary-foreground"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           >
@@ -57,13 +65,16 @@ export function MainLayout({ children }: MainLayoutProps) {
               />
             </svg>
           </Button>
-          <h1 className="text-xl font-bold">DriveSafe Portal</h1>
+          <h1 className="text-xl font-bold">Ikizamini</h1>
         </div>
-        
+
         {currentUser && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full"
+              >
                 <div className="flex h-full w-full items-center justify-center rounded-full bg-accent text-accent-foreground">
                   <User className="h-5 w-5" />
                 </div>
@@ -71,7 +82,9 @@ export function MainLayout({ children }: MainLayoutProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuLabel className="font-normal text-sm">{currentUser.email}</DropdownMenuLabel>
+              <DropdownMenuLabel className="font-normal text-sm">
+                {currentUser.email}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/profile")}>
                 <Settings className="mr-2 h-4 w-4" />
@@ -86,7 +99,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           </DropdownMenu>
         )}
       </header>
-      
+
       <div className="flex flex-1">
         {/* Sidebar */}
         {currentUser && isSidebarOpen && (
@@ -103,7 +116,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     Dashboard
                   </Button>
                 </li>
-                
+
                 {isAdminOrAbove && (
                   <>
                     <li>
@@ -128,7 +141,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     </li>
                   </>
                 )}
-                
+
                 {currentUser.role === "user" && (
                   <li>
                     <Button
@@ -141,7 +154,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                     </Button>
                   </li>
                 )}
-                
+
                 {isSuperAdmin && (
                   <li>
                     <Button
@@ -161,7 +174,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             </div>
           </div>
         )}
-        
+
         {/* Main content */}
         <main className="flex-1 bg-background p-6 overflow-auto">
           {children}

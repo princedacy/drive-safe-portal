@@ -1,11 +1,17 @@
-
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
@@ -27,7 +33,10 @@ export default function Login() {
     } catch (error) {
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "Please check your credentials and try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Please check your credentials and try again.",
         variant: "destructive",
       });
     }
@@ -38,7 +47,9 @@ export default function Login() {
       <div className="w-full max-w-md">
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">DriveSafe Portal</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">
+              Ikizamini
+            </CardTitle>
             <CardDescription className="text-center">
               Enter your credentials to sign in to your account
             </CardDescription>
@@ -70,11 +81,7 @@ export default function Login() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
                 ) : (
@@ -83,9 +90,20 @@ export default function Login() {
               </Button>
               <p className="text-sm text-center text-muted-foreground">
                 For testing use: <br />
-                <code className="text-xs bg-muted p-1 rounded">superadmin@example.com</code> / <code className="text-xs bg-muted p-1 rounded">password</code> <br />
-                <code className="text-xs bg-muted p-1 rounded">admin@example.com</code> / <code className="text-xs bg-muted p-1 rounded">password</code> <br />
-                <code className="text-xs bg-muted p-1 rounded">user@example.com</code> / <code className="text-xs bg-muted p-1 rounded">password</code>
+                <code className="text-xs bg-muted p-1 rounded">
+                  superadmin@example.com
+                </code>{" "}
+                / <code className="text-xs bg-muted p-1 rounded">password</code>{" "}
+                <br />
+                <code className="text-xs bg-muted p-1 rounded">
+                  admin@example.com
+                </code>{" "}
+                / <code className="text-xs bg-muted p-1 rounded">password</code>{" "}
+                <br />
+                <code className="text-xs bg-muted p-1 rounded">
+                  user@example.com
+                </code>{" "}
+                / <code className="text-xs bg-muted p-1 rounded">password</code>
               </p>
             </CardFooter>
           </form>
