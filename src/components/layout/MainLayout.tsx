@@ -27,8 +27,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     navigate("/login");
   };
 
-  const isAdminOrAbove = currentUser?.role === "admin" || currentUser?.role === "superadmin";
-  const isSuperAdmin = currentUser?.role === "superadmin";
+  const isAdminOrAbove = currentUser?.role === "ADMIN" || currentUser?.role === "SUPER_ADMIN";
+  const isSuperAdmin = currentUser?.role === "SUPER_ADMIN";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -57,7 +57,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               />
             </svg>
           </Button>
-          <h1 className="text-xl font-bold">DriveSafe Portal</h1>
+          <h1 className="text-xl font-bold">Ikizamini Portal</h1>
         </div>
         
         {currentUser && (
@@ -129,7 +129,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                   </>
                 )}
                 
-                {currentUser.role === "user" && (
+                {currentUser.role === "USER" && (
                   <li>
                     <Button
                       variant="ghost"

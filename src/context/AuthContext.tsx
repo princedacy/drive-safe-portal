@@ -4,7 +4,7 @@ import axios from "axios";
 
 const API_BASE_URL = "https://dev.backend.ikizamini.hillygeeks.com/api/v1";
 
-type UserRole = "SUPER_ADMIN" | "ADMIN" | "USER";
+export type UserRole = "SUPER_ADMIN" | "ADMIN" | "USER";
 
 export interface User {
   id: string;
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check for saved token and user in localStorage on init
     const savedToken = localStorage.getItem("authToken");
-    const savedUser = localStorage.getItem("driveSafeUser");
+    const savedUser = localStorage.getItem("ikizaminiUser");
     
     if (savedToken) {
       setToken(savedToken);
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Save user data
       setCurrentUser(user);
-      localStorage.setItem("driveSafeUser", JSON.stringify(user));
+      localStorage.setItem("ikizaminiUser", JSON.stringify(user));
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Save user data
       setCurrentUser(user);
-      localStorage.setItem("driveSafeUser", JSON.stringify(user));
+      localStorage.setItem("ikizaminiUser", JSON.stringify(user));
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // No need to call the API endpoint if you don't have a logout endpoint
       // Just clear local storage and state
       localStorage.removeItem("authToken");
-      localStorage.removeItem("driveSafeUser");
+      localStorage.removeItem("ikizaminiUser");
       setCurrentUser(null);
       setToken(null);
       delete api.defaults.headers.common['Authorization'];

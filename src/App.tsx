@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -61,7 +62,7 @@ const App = () => (
                 <Route 
                   path="/exams" 
                   element={
-                    <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
                       <ExamsManagement />
                     </ProtectedRoute>
                   } 
@@ -70,7 +71,7 @@ const App = () => (
                 <Route 
                   path="/exams/create" 
                   element={
-                    <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
                       <CreateExam />
                     </ProtectedRoute>
                   } 
@@ -79,7 +80,7 @@ const App = () => (
                 <Route 
                   path="/exams/edit/:examId" 
                   element={
-                    <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
                       <CreateExam />
                     </ProtectedRoute>
                   } 
@@ -88,7 +89,7 @@ const App = () => (
                 <Route 
                   path="/exams/assign/:examId" 
                   element={
-                    <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
                       <AssignExam />
                     </ProtectedRoute>
                   } 
@@ -97,7 +98,7 @@ const App = () => (
                 <Route 
                   path="/users" 
                   element={
-                    <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
+                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
                       <UsersManagement />
                     </ProtectedRoute>
                   } 
@@ -107,7 +108,7 @@ const App = () => (
                 <Route 
                   path="/admin-management" 
                   element={
-                    <ProtectedRoute allowedRoles={["superadmin"]}>
+                    <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
                       <AdminManagement />
                     </ProtectedRoute>
                   } 
@@ -117,7 +118,7 @@ const App = () => (
                 <Route 
                   path="/my-exams" 
                   element={
-                    <ProtectedRoute allowedRoles={["user"]}>
+                    <ProtectedRoute allowedRoles={["USER"]}>
                       <UserExams />
                     </ProtectedRoute>
                   } 

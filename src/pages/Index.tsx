@@ -16,11 +16,11 @@ export default function Index() {
       return;
     }
 
-    if (currentUser.role === "user") {
+    if (currentUser.role === "USER") {
       navigate("/my-exams");
-    } else if (currentUser.role === "admin") {
+    } else if (currentUser.role === "ADMIN") {
       navigate("/exams");
-    } else if (currentUser.role === "superadmin") {
+    } else if (currentUser.role === "SUPER_ADMIN") {
       navigate("/admin-management");
     } else {
       navigate("/dashboard");

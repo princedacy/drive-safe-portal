@@ -2,7 +2,7 @@
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { User } from "@/context/AuthContext";
+import { User, UserRole } from "@/context/AuthContext";
 
 // Ensure the User type has the admin properties
 export interface ExtendedUser extends User {
@@ -12,7 +12,7 @@ export interface ExtendedUser extends User {
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: Array<User["role"]>;
+  allowedRoles?: Array<UserRole>;
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {

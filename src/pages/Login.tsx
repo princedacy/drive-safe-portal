@@ -29,6 +29,7 @@ export default function Login() {
       });
       navigate(from, { replace: true });
     } catch (error: any) {
+      console.error("Login error details:", error);
       toast({
         title: "Login failed",
         description: error.response?.data?.message || "Please check your credentials and try again.",
@@ -42,7 +43,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">DriveSafe Portal</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">Ikizamini Portal</CardTitle>
             <CardDescription className="text-center">
               Enter your credentials to sign in to your account
             </CardDescription>
