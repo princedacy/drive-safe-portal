@@ -11,11 +11,16 @@ export default function Index() {
   useEffect(() => {
     if (isLoading) return;
 
+    console.log("Index page - currentUser:", currentUser);
+
     if (!currentUser) {
+      console.log("No user, redirecting to login");
       navigate("/login");
       return;
     }
 
+    console.log("Redirecting based on role:", currentUser.role);
+    
     if (currentUser.role === "USER") {
       navigate("/my-exams");
     } else if (currentUser.role === "ADMIN") {

@@ -20,7 +20,11 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   const { currentUser, isLoading } = useAuth();
   const location = useLocation();
 
-  console.log("Protected route check:", { currentUser, allowedRoles });
+  console.log("Protected route check:", { 
+    currentUser, 
+    allowedRoles,
+    path: location.pathname 
+  });
 
   if (isLoading) {
     // Return loading state
