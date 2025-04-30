@@ -62,8 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     console.log('Login attempt with:', { email, password });
     try {
-      // Correct endpoint from '/auth/login' to '/auth/signin'
-      const response = await api.post('/auth/signin', {
+      // Corrected endpoint with hyphen: 'signin' -> 'sign-in'
+      const response = await api.post('/auth/sign-in', {
         email,
         password,
       });
