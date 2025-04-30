@@ -8,7 +8,6 @@ import { User } from "@/context/AuthContext";
 export interface ExtendedUser extends User {
   address?: string;
   type?: string;
-  phone?: string;
 }
 
 interface ProtectedRouteProps {
@@ -37,11 +36,11 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   // Check role permissions if roles are specified
   if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
     // Redirect to appropriate dashboard based on role
-    if (currentUser.role === "user") {
+    if (currentUser.role === "USER") {
       return <Navigate to="/my-exams" replace />;
-    } else if (currentUser.role === "admin") {
+    } else if (currentUser.role === "ADMIN") {
       return <Navigate to="/exams" replace />;
-    } else if (currentUser.role === "superadmin") {
+    } else if (currentUser.role === "SUPER_ADMIN") {
       return <Navigate to="/admin-management" replace />;
     }
     

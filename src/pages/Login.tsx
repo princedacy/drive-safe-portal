@@ -23,6 +23,10 @@ export default function Login() {
 
     try {
       await login(email, password);
+      toast({
+        title: "Login successful",
+        description: "You have successfully logged in.",
+      });
       navigate(from, { replace: true });
     } catch (error: any) {
       toast({
@@ -83,9 +87,7 @@ export default function Login() {
               </Button>
               <p className="text-sm text-center text-muted-foreground">
                 For testing use: <br />
-                <code className="text-xs bg-muted p-1 rounded">superadmin@example.com</code> / <code className="text-xs bg-muted p-1 rounded">password</code> <br />
-                <code className="text-xs bg-muted p-1 rounded">admin@example.com</code> / <code className="text-xs bg-muted p-1 rounded">password</code> <br />
-                <code className="text-xs bg-muted p-1 rounded">user@example.com</code> / <code className="text-xs bg-muted p-1 rounded">password</code>
+                <code className="text-xs bg-muted p-1 rounded">admin@hillygeeks.com</code> / <code className="text-xs bg-muted p-1 rounded">test12345</code>
               </p>
             </CardFooter>
           </form>

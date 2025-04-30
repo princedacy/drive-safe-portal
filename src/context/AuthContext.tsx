@@ -1,14 +1,17 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import axios from "axios";
 
 const API_BASE_URL = "https://dev.backend.ikizamini.hillygeeks.com/api/v1";
 
-type UserRole = "superadmin" | "admin" | "user";
+type UserRole = "SUPER_ADMIN" | "ADMIN" | "USER";
 
 export interface User {
   id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
   role: UserRole;
   assignedExams?: string[];
 }
@@ -17,6 +20,7 @@ interface AuthContextType {
   currentUser: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  signup: (firstName: string, lastName: string, phone: string, email: string, role: UserRole, password: string) => Promise<void>;
   logout: () => Promise<void>;
   magicLinkLogin: (token: string) => Promise<void>;
   token: string | null;
@@ -57,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await api.post('/auth/login', {
+      const response = await api.post('/auth/signin', {
         email,
         password,
       });
@@ -80,19 +84,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signup = async (firstName: string, lastName: string, phone: string, email: string, role: UserRole, password: string) => {
+    setIsLoading(true);
+    try {
+      const response = await api.post('/auth/signup', {
+        firstName,
+        lastName,
+        phone,
+        email,
+        role,
+        password,
+      });
+
+      const { token: authToken, user } = response.data;
+      
+      // Save token and update axios default headers
+      setToken(authToken);
+      api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+      localStorage.setItem("authToken", authToken);
+      
+      // Save user data
+      setCurrentUser(user);
+      localStorage.setItem("driveSafeUser", JSON.stringify(user));
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async () => {
     setIsLoading(true);
     try {
-      await api.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Clear local storage and state regardless of API call success
+      // No need to call the API endpoint if you don't have a logout endpoint
+      // Just clear local storage and state
       localStorage.removeItem("authToken");
       localStorage.removeItem("driveSafeUser");
       setCurrentUser(null);
       setToken(null);
       delete api.defaults.headers.common['Authorization'];
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -117,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         currentUser,
         isLoading,
         login,
+        signup,
         logout,
         magicLinkLogin,
         token,
