@@ -60,11 +60,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
+    console.log('Login attempt with:', { email, password });
     try {
+      // Correct endpoint from '/auth/login' to '/auth/signin'
       const response = await api.post('/auth/signin', {
         email,
         password,
       });
+      
+      console.log('Login response:', response.data);
 
       const { token: authToken, user } = response.data;
       

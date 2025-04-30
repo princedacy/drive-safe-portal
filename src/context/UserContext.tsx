@@ -1,9 +1,9 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { User } from "./AuthContext";
+import { User, UserRole } from "./AuthContext";
 
 // Extended user type with admin properties
-interface ExtendedUser extends User {
+interface ExtendedUser extends Omit<User, "phone"> {
   address?: string;
   type?: string;
   phone?: string;
@@ -14,7 +14,7 @@ interface UserContextType {
   addUser: (user: Omit<ExtendedUser, "id">) => void;
   updateUser: (user: ExtendedUser) => void;
   deleteUser: (userId: string) => void;
-  sendInviteEmail: (email: string, role: User["role"]) => Promise<void>;
+  sendInviteEmail: (email: string, role: UserRole) => Promise<void>;
 }
 
 // Sample users
@@ -22,14 +22,17 @@ const MOCK_USERS: ExtendedUser[] = [
   {
     id: "1",
     email: "superadmin@example.com",
-    name: "Super Admin",
-    role: "superadmin",
+    firstName: "Super",
+    lastName: "Admin",
+    role: "SUPER_ADMIN",
+    phone: "1234567890",
   },
   {
     id: "2",
     email: "admin@example.com",
-    name: "Admin User",
-    role: "admin",
+    firstName: "Admin",
+    lastName: "User",
+    role: "ADMIN",
     address: "New York, USA",
     type: "TESTING_CENTER",
     phone: "1234567890",
@@ -37,15 +40,19 @@ const MOCK_USERS: ExtendedUser[] = [
   {
     id: "3",
     email: "user1@example.com",
-    name: "Test User 1",
-    role: "user",
+    firstName: "Test",
+    lastName: "User 1",
+    role: "USER",
+    phone: "1234567890",
     assignedExams: ["exam1", "exam2"],
   },
   {
     id: "4",
     email: "user2@example.com",
-    name: "Test User 2",
-    role: "user",
+    firstName: "Test",
+    lastName: "User 2",
+    role: "USER",
+    phone: "1234567890",
     assignedExams: ["exam2"],
   },
 ];
@@ -81,7 +88,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
   };
 
-  const sendInviteEmail = async (email: string, role: User["role"]) => {
+  const sendInviteEmail = async (email: string, role: UserRole) => {
     // In a real app, this would call an API to send an email with a magic link
     // For demo purposes, we'll simulate this with a timeout
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -91,8 +98,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const newUser: ExtendedUser = {
       id: `user${Date.now()}`,
       email,
-      name: email.split('@')[0], // Default name from email
+      firstName: email.split('@')[0], // Default first name from email
+      lastName: "", // Empty last name as default
       role,
+      phone: "", // Empty phone as default
       assignedExams: [],
     };
     
