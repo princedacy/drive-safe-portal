@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, UserPlus, Save, Trash2, Shield } from "lucide-react";
+import { Search, UserPlus, Save, Trash2, Shield, Edit } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
@@ -26,10 +26,12 @@ const adminFormSchema = z.object({
 type AdminFormValues = z.infer<typeof adminFormSchema>;
 
 export default function AdminManagement() {
-  const { admins, createAdmin, deleteUser, loadAdmins, isLoading } = useUsers();
+  const { admins, createAdmin, deleteUser, loadAdmins, isLoading, updateAdmin } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
   const { toast } = useToast();
   
   // Load admins on component mount
@@ -44,6 +46,18 @@ export default function AdminManagement() {
       name: "",
       address: "",
       type: "TESTING_CENTER", // Default value
+      phone: "",
+      email: "",
+    },
+  });
+
+  // Setup edit form
+  const editForm = useForm<AdminFormValues>({
+    resolver: zodResolver(adminFormSchema),
+    defaultValues: {
+      name: "",
+      address: "",
+      type: "",
       phone: "",
       email: "",
     },
@@ -78,6 +92,51 @@ export default function AdminManagement() {
       toast({
         title: "Failed to create admin",
         description: "There was an error creating the admin. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openEditDialog = (admin: any) => {
+    setCurrentAdminId(admin.id);
+    editForm.reset({
+      name: admin.name || "",
+      email: admin.email || "",
+      address: admin.address || "",
+      type: admin.type || "",
+      phone: admin.phone || "",
+    });
+    setEditDialogOpen(true);
+  };
+  
+  const handleUpdateAdmin = async (data: AdminFormValues) => {
+    if (!currentAdminId) return;
+    
+    setIsSubmitting(true);
+    try {
+      await updateAdmin(currentAdminId, {
+        name: data.name,
+        email: data.email,
+        address: data.address,
+        type: data.type,
+        phone: data.phone,
+      });
+      
+      toast({
+        title: "Admin updated",
+        description: `${data.name} has been updated successfully.`,
+      });
+      
+      editForm.reset();
+      setEditDialogOpen(false);
+      setCurrentAdminId(null);
+    } catch (error) {
+      console.error('Error updating admin:', error);
+      toast({
+        title: "Failed to update admin",
+        description: "There was an error updating the admin. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -201,6 +260,102 @@ export default function AdminManagement() {
           </Dialog>
         </div>
         
+        {/* Edit Admin Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Update Admin</DialogTitle>
+              <DialogDescription>
+                Edit the details of this admin organization.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(handleUpdateAdmin)} className="space-y-4 py-2">
+                <FormField
+                  control={editForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organization Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter organization name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter address" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter organization type" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter phone number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter email address" type="email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <DialogFooter className="pt-4">
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Update Admin
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+        
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -235,7 +390,15 @@ export default function AdminManagement() {
                         <span>{admin.name || "Unnamed Admin"}</span>
                       </div>
                       <div className="flex-1">{admin.email}</div>
-                      <div className="w-24 text-right">
+                      <div className="w-24 text-right flex justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-primary hover:bg-primary/10 hover:text-primary mr-1"
+                          onClick={() => openEditDialog(admin)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"

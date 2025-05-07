@@ -1,7 +1,8 @@
 
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth, User, UserRole } from "@/context/AuthContext";
+import { useAuth, User } from "@/context/AuthContext";
+import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE, UserRole } from "@/types/UserRole";
 
 // Ensure the User type has the admin properties
 export interface ExtendedUser extends Omit<User, "phone"> {
@@ -46,11 +47,11 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     console.log("User role not allowed:", currentUser.role, "Required:", allowedRoles);
     
     // Redirect to appropriate dashboard based on role
-    if (currentUser.role === "USER") {
+    if (currentUser.role === USER_ROLE) {
       return <Navigate to="/my-exams" replace />;
-    } else if (currentUser.role === "ADMIN") {
+    } else if (currentUser.role === ADMIN_ROLE) {
       return <Navigate to="/exams" replace />;
-    } else if (currentUser.role === "SUPER_ADMIN") {
+    } else if (currentUser.role === SUPER_ADMIN_ROLE) {
       return <Navigate to="/admin-management" replace />;
     }
     

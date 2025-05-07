@@ -1,7 +1,8 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { User, UserRole } from "./AuthContext";
+import { User } from "./AuthContext";
 import axios from "axios";
+import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE, UserRole } from "@/types/UserRole";
 
 const API_BASE_URL = "https://dev.backend.ikizamini.hillygeeks.com/api/v1";
 
@@ -11,6 +12,8 @@ interface ExtendedUser extends Omit<User, "phone"> {
   type?: string;
   phone?: string;
   name?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 interface UserContextType {
@@ -18,7 +21,8 @@ interface UserContextType {
   admins: ExtendedUser[];
   loadAdmins: () => Promise<void>;
   addUser: (user: Omit<ExtendedUser, "id">) => void;
-  createAdmin: (adminData: Omit<ExtendedUser, "id" | "role">) => Promise<void>;
+  createAdmin: (adminData: Omit<ExtendedUser, "id" | "role" | "firstName" | "lastName">) => Promise<void>;
+  updateAdmin: (adminId: string, adminData: Partial<Omit<ExtendedUser, "id" | "role">>) => Promise<void>;
   updateUser: (user: ExtendedUser) => void;
   deleteUser: (userId: string) => void;
   sendInviteEmail: (email: string, role: UserRole) => Promise<void>;
@@ -40,7 +44,7 @@ const MOCK_USERS: ExtendedUser[] = [
     email: "superadmin@example.com",
     firstName: "Super",
     lastName: "Admin",
-    role: "SUPER_ADMIN",
+    role: SUPER_ADMIN_ROLE,
     phone: "1234567890",
     name: "Super Admin",
   },
@@ -49,7 +53,7 @@ const MOCK_USERS: ExtendedUser[] = [
     email: "user1@example.com",
     firstName: "Test",
     lastName: "User 1",
-    role: "USER",
+    role: USER_ROLE,
     phone: "1234567890",
     name: "Test User 1",
     assignedExams: ["exam1", "exam2"],
@@ -59,7 +63,7 @@ const MOCK_USERS: ExtendedUser[] = [
     email: "user2@example.com",
     firstName: "Test",
     lastName: "User 2",
-    role: "USER",
+    role: USER_ROLE,
     phone: "1234567890",
     name: "Test User 2",
     assignedExams: ["exam2"],
@@ -112,7 +116,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         firstName: "",
         lastName: "",
         name: admin.name,
-        role: "ADMIN" as UserRole,
+        role: ADMIN_ROLE as UserRole,
         address: admin.address,
         type: admin.type,
         phone: admin.phone,
@@ -135,7 +139,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUsers((prevUsers) => [...prevUsers, newUser]);
   };
 
-  const createAdmin = async (adminData: Omit<ExtendedUser, "id" | "role">) => {
+  const createAdmin = async (adminData: Omit<ExtendedUser, "id" | "role" | "firstName" | "lastName">) => {
     setIsLoading(true);
     try {
       // Get token from localStorage
@@ -166,6 +170,44 @@ export function UserProvider({ children }: { children: ReactNode }) {
       return response.data;
     } catch (error) {
       console.error('Error creating admin organization:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add the update admin function
+  const updateAdmin = async (adminId: string, adminData: Partial<Omit<ExtendedUser, "id" | "role">>) => {
+    setIsLoading(true);
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem("authToken");
+      
+      if (!token) {
+        console.error("No auth token available");
+        throw new Error("Authentication required");
+      }
+      
+      // Set authorization header
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Update admin via API
+      const response = await api.put(`/super/organizations/${adminId}`, {
+        name: adminData.name,
+        address: adminData.address,
+        type: adminData.type,
+        phone: adminData.phone,
+        email: adminData.email,
+      });
+      
+      console.log('Update admin response:', response.data);
+      
+      // Reload the admin list to get the updated admin
+      await loadAdmins();
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error updating admin organization:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -214,6 +256,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         loadAdmins,
         addUser,
         createAdmin,
+        updateAdmin, // Add the new function to the context
         updateUser,
         deleteUser,
         sendInviteEmail,
