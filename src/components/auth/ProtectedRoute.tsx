@@ -4,14 +4,6 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, User } from "@/context/AuthContext";
 import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE, UserRole } from "@/types/UserRole";
 
-// Ensure the User type has the admin properties
-export interface ExtendedUser extends Omit<User, "phone"> {
-  address?: string;
-  type?: string;
-  phone?: string;
-  name?: string;
-}
-
 interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: Array<UserRole>;

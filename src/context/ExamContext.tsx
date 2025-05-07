@@ -76,8 +76,10 @@ const MOCK_EXAMS: Exam[] = [
       },
       {
         id: "q2",
-        text: "When must you stop at a STOP sign?",
-        options: [
+        title: "When must you stop at a STOP sign?",
+        description: "Choose the correct answer",
+        type: "MULTIPLE_CHOICE",
+        choices: [
           "Only when other vehicles are present",
           "Only during daytime",
           "Only at busy intersections",
@@ -87,8 +89,10 @@ const MOCK_EXAMS: Exam[] = [
       },
       {
         id: "q3",
-        text: "What is the meaning of a yellow traffic light?",
-        options: [
+        title: "What is the meaning of a yellow traffic light?",
+        description: "Choose the correct answer",
+        type: "MULTIPLE_CHOICE",
+        choices: [
           "Go faster to clear the intersection",
           "Prepare to stop",
           "Pedestrians can cross",
@@ -109,8 +113,10 @@ const MOCK_EXAMS: Exam[] = [
     questions: [
       {
         id: "q1",
-        text: "What is the proper following distance on a highway in good conditions?",
-        options: [
+        title: "What is the proper following distance on a highway in good conditions?",
+        description: "Choose the correct answer",
+        type: "MULTIPLE_CHOICE",
+        choices: [
           "1 car length",
           "2 seconds",
           "3-4 seconds",
@@ -120,8 +126,10 @@ const MOCK_EXAMS: Exam[] = [
       },
       {
         id: "q2",
-        text: "When entering a highway, you should:",
-        options: [
+        title: "When entering a highway, you should:",
+        description: "Choose the correct answer",
+        type: "MULTIPLE_CHOICE",
+        choices: [
           "Stop and wait for a large gap",
           "Enter slowly to be cautious",
           "Accelerate to match the flow of traffic",
@@ -131,8 +139,10 @@ const MOCK_EXAMS: Exam[] = [
       },
       {
         id: "q3",
-        text: "When is it legal to pass on the right on a multi-lane highway?",
-        options: [
+        title: "When is it legal to pass on the right on a multi-lane highway?",
+        description: "Choose the correct answer",
+        type: "MULTIPLE_CHOICE",
+        choices: [
           "Never",
           "When the vehicle ahead is turning left",
           "When in the rightmost lane and traffic is flowing freely",
@@ -218,7 +228,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
           createdAt: exam.createdAt,
         }));
         
-        setExams(fetchedExams);
+        setExams([...MOCK_EXAMS, ...fetchedExams]);
       }
     } catch (error) {
       console.error('Error loading exams:', error);

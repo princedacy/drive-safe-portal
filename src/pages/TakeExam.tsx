@@ -1,450 +1,506 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { useExams, Question, Exam } from "@/context/ExamContext";
 import { useAuth } from "@/context/AuthContext";
-import { useExams } from "@/context/ExamContext";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Clock, AlertTriangle, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function TakeExam() {
   const { examId } = useParams<{ examId: string }>();
+  const { exams, userExamResults, saveExamResult, fetchExamById } = useExams();
   const { currentUser } = useAuth();
-  const { exams, userExamResults, saveExamResult } = useExams();
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  const [exam, setExam] = useState<Exam | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
-  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [examStarted, setExamStarted] = useState(false);
   const [examCompleted, setExamCompleted] = useState(false);
-  const [showTimeWarning, setShowTimeWarning] = useState(false);
-  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [score, setScore] = useState<number | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Get the exam
-  const exam = exams.find(e => e.id === examId);
-  
-  // Check if user has already completed this exam
-  const userResult = userExamResults.find(
-    r => r.examId === examId && r.userId === currentUser?.id && r.completed
-  );
-  
-  const isReview = !!userResult?.completed;
-  
+  // Load exam data
   useEffect(() => {
-    if (!exam) {
-      toast({
-        title: "Exam not found",
-        description: "The requested exam could not be found.",
-        variant: "destructive",
-      });
-      navigate("/my-exams");
-      return;
-    }
+    const loadExam = async () => {
+      if (!examId) return;
+      
+      setIsLoading(true);
+      
+      try {
+        // Check if there's a saved exam result
+        const savedResult = userExamResults.find(
+          (result) => result.examId === examId && result.userId === currentUser?.id
+        );
+        
+        // Load exam from API
+        const fetchedExam = await fetchExamById(examId);
+        
+        if (fetchedExam) {
+          setExam(fetchedExam);
+          
+          // If there's a saved result and it's not completed, resume it
+          if (savedResult && !savedResult.completed) {
+            setSelectedAnswers(savedResult.answers);
+            setExamStarted(true);
+            
+            // Calculate time left if time limit exists
+            if (fetchedExam.timeLimit) {
+              const startTime = new Date(savedResult.startedAt).getTime();
+              const timeElapsed = (Date.now() - startTime) / 1000 / 60; // in minutes
+              const remainingTime = Math.max(0, (fetchedExam.timeLimit || 0) - timeElapsed);
+              setTimeLeft(Math.round(remainingTime));
+            }
+          } else if (savedResult && savedResult.completed) {
+            // If exam is already completed, show the results
+            setSelectedAnswers(savedResult.answers);
+            setExamCompleted(true);
+            setScore(savedResult.score);
+            setExamStarted(true);
+          }
+        } else {
+          toast({
+            title: "Exam not found",
+            description: "The exam you're looking for doesn't exist or has been removed.",
+            variant: "destructive",
+          });
+          navigate("/my-exams");
+        }
+      } catch (error) {
+        console.error("Error loading exam:", error);
+        toast({
+          title: "Error loading exam",
+          description: "There was a problem loading the exam. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    if (isReview) {
-      // For review mode, load the user's previous answers
-      setSelectedAnswers(userResult.answers);
-      setExamCompleted(true);
-    } else {
-      // Initialize empty answers for each question
-      setSelectedAnswers(new Array(exam.questions.length).fill(-1));
-      setTimeRemaining(exam.timeLimit * 60);
-    }
-  }, [exam, isReview, navigate, toast, userResult]);
+    loadExam();
+  }, [examId, userExamResults, currentUser]);
   
+  // Timer effect
   useEffect(() => {
-    if (!examStarted || examCompleted || isReview) return;
+    if (!examStarted || examCompleted || !timeLeft) return;
     
     const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 0) {
+      setTimeLeft((prev) => {
+        if (prev === null || prev <= 0) {
           clearInterval(timer);
-          submitExam();
+          handleExamSubmit(true);
           return 0;
         }
-        
-        // Show warning when 1 minute remains
-        if (prev === 60) {
-          setShowTimeWarning(true);
-        }
-        
         return prev - 1;
       });
-    }, 1000);
+    }, 60000); // Update every minute
     
     return () => clearInterval(timer);
-  }, [examStarted, examCompleted, isReview]);
+  }, [examStarted, examCompleted, timeLeft]);
   
-  const startExam = () => {
+  // Format time left
+  const formatTimeLeft = () => {
+    if (timeLeft === null) return "";
+    
+    const hours = Math.floor(timeLeft / 60);
+    const minutes = Math.floor(timeLeft % 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m left`;
+    }
+    return `${minutes} minutes left`;
+  };
+  
+  // Start the exam
+  const handleStartExam = () => {
+    if (!exam || !currentUser) return;
+    
     setExamStarted(true);
-    // Save the started exam to track time
+    
+    if (exam.timeLimit) {
+      setTimeLeft(exam.timeLimit);
+    }
+    
+    // Initialize selected answers array
+    const initialAnswers = new Array(exam.questions.length).fill(-1);
+    setSelectedAnswers(initialAnswers);
+    
+    // Save the initial state to record that exam has started
     saveExamResult({
-      userId: currentUser?.id || "",
-      examId: examId || "",
+      userId: currentUser.id,
+      examId: exam.id,
+      answers: initialAnswers,
       score: 0,
-      answers: selectedAnswers,
       completed: false,
       startedAt: new Date().toISOString(),
     });
-  };
-  
-  const formatTimeRemaining = () => {
-    const minutes = Math.floor(timeRemaining / 60);
-    const seconds = timeRemaining % 60;
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  };
-  
-  const handleAnswerSelect = (optionIndex: number) => {
-    if (examCompleted || isReview) return;
     
-    const newAnswers = [...selectedAnswers];
-    newAnswers[currentQuestionIndex] = optionIndex;
-    setSelectedAnswers(newAnswers);
+    toast({
+      title: "Exam started",
+      description: "Good luck! Take your time and answer all questions.",
+    });
   };
   
-  const previousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-    }
-  };
-  
-  const nextQuestion = () => {
-    if (exam && currentQuestionIndex < exam.questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    }
-  };
-  
-  const calculateScore = () => {
-    if (!exam) return 0;
+  // Handle answer selection
+  const handleAnswerSelect = (answerIndex: number) => {
+    if (examCompleted) return;
     
+    setSelectedAnswers((prev) => {
+      const newAnswers = [...prev];
+      newAnswers[currentQuestionIndex] = answerIndex;
+      return newAnswers;
+    });
+  };
+  
+  // Navigate to next question
+  const handleNextQuestion = () => {
+    if (!exam || currentQuestionIndex >= exam.questions.length - 1) return;
+    
+    setCurrentQuestionIndex(currentQuestionIndex + 1);
+  };
+  
+  // Navigate to previous question
+  const handlePrevQuestion = () => {
+    if (currentQuestionIndex <= 0) return;
+    
+    setCurrentQuestionIndex(currentQuestionIndex - 1);
+  };
+  
+  // Submit exam
+  const handleExamSubmit = (isTimeUp = false) => {
+    if (!exam || !currentUser) return;
+    
+    // Calculate score
     let correctAnswers = 0;
     
     exam.questions.forEach((question, index) => {
-      if (selectedAnswers[index] === question.correctOption) {
+      if (question.type === "MULTIPLE_CHOICE" && 
+          question.correctOption !== undefined && 
+          selectedAnswers[index] === question.correctOption) {
         correctAnswers++;
       }
     });
     
-    return Math.round((correctAnswers / exam.questions.length) * 100);
-  };
-  
-  const submitExam = () => {
-    if (!exam || !currentUser) return;
+    const calculatedScore = Math.round((correctAnswers / exam.questions.length) * 100);
+    setScore(calculatedScore);
     
-    const score = calculateScore();
-    const passed = score >= exam.passingScore;
-    
+    // Save the result
     saveExamResult({
       userId: currentUser.id,
       examId: exam.id,
-      score,
       answers: selectedAnswers,
+      score: calculatedScore,
       completed: true,
       startedAt: new Date().toISOString(),
     }, true);
     
     setExamCompleted(true);
-    setShowSubmitDialog(false);
     
     toast({
-      title: passed ? "Exam Passed!" : "Exam Failed",
-      description: `Your score: ${score}%. ${passed ? "Congratulations!" : "Please review and try again."}`,
-      variant: passed ? "default" : "destructive",
+      title: isTimeUp ? "Time's up!" : "Exam Submitted",
+      description: `You scored ${calculatedScore}% on this exam.`,
+      variant: calculatedScore >= (exam.passingScore || 70) ? "default" : "destructive",
     });
   };
   
-  if (!exam) {
+  // Current question
+  const currentQuestion = exam?.questions[currentQuestionIndex];
+  
+  // Progress calculation
+  const answeredQuestionsCount = selectedAnswers.filter((answer) => answer !== -1).length;
+  const progressPercentage = exam ? (answeredQuestionsCount / exam.questions.length) * 100 : 0;
+  
+  if (isLoading) {
     return (
       <MainLayout>
-        <div className="container mx-auto py-12 text-center">
-          <h2 className="text-2xl font-bold mb-4">Exam Not Found</h2>
-          <p className="text-muted-foreground mb-6">The requested exam could not be found.</p>
-          <Button onClick={() => navigate("/my-exams")}>Back to My Exams</Button>
+        <div className="container mx-auto py-6 flex justify-center items-center min-h-[70vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
       </MainLayout>
     );
   }
   
-  const question = exam.questions[currentQuestionIndex];
-  
-  const renderWelcomePage = () => (
-    <div className="max-w-2xl mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle>{exam.title}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p>{exam.description}</p>
-          
-          <div className="bg-muted p-4 rounded-md space-y-2">
-            <div className="flex items-center">
-              <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-              <span>Time Limit: {exam.timeLimit} minutes</span>
-            </div>
-            <div>Questions: {exam.questions.length}</div>
-            <div>Passing Score: {exam.passingScore}%</div>
-          </div>
-          
-          <div className="bg-accent/30 p-4 rounded-md">
-            <h3 className="font-medium mb-2">Instructions:</h3>
-            <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>You have {exam.timeLimit} minutes to complete this exam.</li>
-              <li>Each question has one correct answer.</li>
-              <li>You can navigate between questions using the buttons at the bottom.</li>
-              <li>Once you submit the exam, you cannot change your answers.</li>
-              <li>You must score at least {exam.passingScore}% to pass.</li>
-            </ul>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={startExam} className="w-full">
-            Start Exam
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
-  );
-  
-  const renderExamQuestion = () => (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-xl font-bold">{exam.title}</h2>
-          <p className="text-sm text-muted-foreground">
-            Question {currentQuestionIndex + 1} of {exam.questions.length}
-          </p>
-        </div>
-        
-        {!isReview && (
-          <div className="flex items-center">
-            <Clock className="h-5 w-5 mr-2 text-muted-foreground" />
-            <span className={`font-mono text-lg ${timeRemaining < 60 ? "text-destructive" : ""}`}>
-              {formatTimeRemaining()}
-            </span>
-          </div>
-        )}
-      </div>
-      
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">{question.text}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {question.options.map((option, index) => (
-              <div
-                key={index}
-                className={`p-4 border rounded-md cursor-pointer transition-colors ${
-                  selectedAnswers[currentQuestionIndex] === index
-                    ? "border-primary bg-primary/10"
-                    : "border-border hover:border-primary/50"
-                } ${
-                  isReview && index === question.correctOption
-                    ? "border-success bg-success/10"
-                    : ""
-                } ${
-                  isReview && 
-                  selectedAnswers[currentQuestionIndex] === index && 
-                  index !== question.correctOption
-                    ? "border-destructive bg-destructive/10"
-                    : ""
-                }`}
-                onClick={() => handleAnswerSelect(index)}
-              >
-                <div className="flex items-start">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 text-sm ${
-                    selectedAnswers[currentQuestionIndex] === index
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  }`}>
-                    {String.fromCharCode(65 + index)}
-                  </div>
-                  <div className="flex-1">{option}</div>
-                  
-                  {isReview && index === question.correctOption && (
-                    <CheckCircle2 className="h-5 w-5 text-success ml-2" />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={previousQuestion}
-            disabled={currentQuestionIndex === 0}
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Previous
-          </Button>
-          
-          <div className="flex items-center space-x-2">
-            {isReview ? (
-              <Button onClick={() => navigate("/my-exams")}>
-                Back to My Exams
-              </Button>
-            ) : (
-              examCompleted ? (
-                <Button onClick={() => navigate("/my-exams")}>
-                  Finish
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => setShowSubmitDialog(true)}
-                  variant="default"
-                >
-                  Submit Exam
-                </Button>
-              )
-            )}
-          </div>
-          
-          <Button
-            variant="outline"
-            onClick={nextQuestion}
-            disabled={currentQuestionIndex === exam.questions.length - 1}
-          >
-            Next
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </CardFooter>
-      </Card>
-      
-      <div className="flex flex-wrap gap-2 justify-center mb-6">
-        {exam.questions.map((_, index) => (
-          <Button
-            key={index}
-            variant="outline"
-            size="sm"
-            className={`w-10 h-10 ${
-              index === currentQuestionIndex
-                ? "bg-primary text-primary-foreground"
-                : ""
-            } ${
-              selectedAnswers[index] !== -1 && index !== currentQuestionIndex
-                ? "bg-muted"
-                : ""
-            }`}
-            onClick={() => setCurrentQuestionIndex(index)}
-          >
-            {index + 1}
-          </Button>
-        ))}
-      </div>
-    </div>
-  );
-  
-  const renderResults = () => {
-    const score = calculateScore();
-    const passed = score >= exam.passingScore;
-    
+  if (!exam) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-center">Exam Results</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center">
-              <div className={`text-5xl font-bold mb-2 ${passed ? "text-success" : "text-destructive"}`}>
-                {score}%
-              </div>
-              <p className="text-lg mb-4">
-                {passed ? "Congratulations! You passed the exam." : "Sorry, you did not pass the exam."}
-              </p>
-              <div className="bg-muted p-4 rounded-md inline-block">
-                <p>Passing score: {exam.passingScore}%</p>
-                <p>Correct answers: {selectedAnswers.filter((answer, index) => 
-                  answer === exam.questions[index].correctOption).length} 
-                  out of {exam.questions.length}
-                </p>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="font-medium">Question Summary:</h3>
-              <div className="space-y-2">
-                {exam.questions.map((q, index) => (
-                  <div 
-                    key={index} 
-                    className={`p-3 rounded-md ${
-                      selectedAnswers[index] === q.correctOption
-                        ? "bg-success/10 border border-success/20"
-                        : "bg-destructive/10 border border-destructive/20"
-                    }`}
-                  >
-                    <p className="font-medium">{index + 1}. {q.text}</p>
-                    <p className="text-sm">
-                      Your answer: {q.options[selectedAnswers[index]]}
-                      {selectedAnswers[index] !== q.correctOption && (
-                        <span className="block text-sm mt-1">
-                          Correct answer: {q.options[q.correctOption]}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-center">
+      <MainLayout>
+        <div className="container mx-auto py-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Exam Not Found</h1>
+            <p className="mb-6 text-muted-foreground">
+              The exam you're looking for doesn't exist or has been removed.
+            </p>
             <Button onClick={() => navigate("/my-exams")}>
               Return to My Exams
             </Button>
-          </CardFooter>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </MainLayout>
     );
-  };
+  }
   
   return (
     <MainLayout>
       <div className="container mx-auto py-6">
-        {!examStarted && !isReview ? renderWelcomePage() : (
-          examCompleted ? renderResults() : renderExamQuestion()
-        )}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">{exam.title}</h1>
+          <p className="text-muted-foreground">{exam.description}</p>
+        </div>
         
-        <AlertDialog open={showTimeWarning} onOpenChange={setShowTimeWarning}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Time is running out!</AlertDialogTitle>
-              <AlertDialogDescription>
-                You have less than 1 minute remaining to complete the exam.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogAction>Continue</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-        
-        <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Submit Exam?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to submit your exam? You won't be able to change your answers once submitted.
+        {!examStarted && !examCompleted ? (
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle>Start Exam</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <div className="mr-3 bg-muted w-6 h-6 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium">{exam.questions.length}</span>
+                  </div>
+                  <span>Questions</span>
+                </div>
                 
-                {selectedAnswers.some(answer => answer === -1) && (
-                  <div className="mt-2 flex items-center text-destructive">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    You have unanswered questions!
+                {exam.timeLimit && (
+                  <div className="flex items-center">
+                    <div className="mr-3 bg-muted w-6 h-6 rounded-full flex items-center justify-center">
+                      <Clock className="h-3 w-3" />
+                    </div>
+                    <span>{exam.timeLimit} minutes time limit</span>
                   </div>
                 )}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={submitExam}>Submit</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                
+                {exam.passingScore && (
+                  <div className="flex items-center">
+                    <div className="mr-3 bg-muted w-6 h-6 rounded-full flex items-center justify-center">
+                      <CheckCircle className="h-3 w-3" />
+                    </div>
+                    <span>{exam.passingScore}% passing score required</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="bg-muted p-4 rounded-md">
+                <h4 className="font-medium mb-2">Instructions:</h4>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li>Read each question carefully before answering</li>
+                  <li>You can move between questions using the navigation buttons</li>
+                  <li>Click "Submit Exam" when you've finished all questions</li>
+                  {exam.timeLimit && (
+                    <li>The exam will automatically submit when time runs out</li>
+                  )}
+                </ul>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={handleStartExam} className="w-full">
+                Start Exam
+              </Button>
+            </CardFooter>
+          </Card>
+        ) : examCompleted ? (
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle>Exam Results</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="text-center">
+                <div className="text-6xl font-bold mb-4">{score}%</div>
+                <div className={`text-lg font-medium ${
+                  score !== null && score >= (exam.passingScore || 70)
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}>
+                  {score !== null && score >= (exam.passingScore || 70)
+                    ? "Passed!"
+                    : "Failed"}
+                </div>
+              </div>
+              
+              {exam.questions.map((question, index) => (
+                <div key={question.id} className="border rounded-lg p-4">
+                  <h3 className="font-medium mb-2">
+                    {index + 1}. {question.title}
+                  </h3>
+                  {question.description && <p className="text-sm text-muted-foreground mb-3">{question.description}</p>}
+                  
+                  {question.type === "MULTIPLE_CHOICE" && question.choices && (
+                    <div className="space-y-2">
+                      {question.choices.map((choice, choiceIndex) => (
+                        <div 
+                          key={choiceIndex}
+                          className={`p-3 rounded-md border ${
+                            choiceIndex === selectedAnswers[index] 
+                              ? choiceIndex === question.correctOption
+                                ? "bg-green-100 border-green-300 dark:bg-green-950 dark:border-green-800"
+                                : "bg-red-100 border-red-300 dark:bg-red-950 dark:border-red-800" 
+                              : choiceIndex === question.correctOption
+                                ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-900"
+                                : ""
+                          }`}
+                        >
+                          <div className="flex items-start">
+                            <div className="mr-3">
+                              {choiceIndex === selectedAnswers[index] ? (
+                                choiceIndex === question.correctOption ? (
+                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                                ) : (
+                                  <AlertCircle className="h-5 w-5 text-red-600" />
+                                )
+                              ) : choiceIndex === question.correctOption ? (
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                              ) : null}
+                            </div>
+                            <div>{choice}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {question.type === "OPEN_ENDED" && (
+                    <div className="italic text-muted-foreground p-3 border rounded-md">
+                      Open-ended questions are not automatically graded
+                    </div>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+            <CardFooter>
+              <Button onClick={() => navigate("/my-exams")} className="w-full">
+                Return to My Exams
+              </Button>
+            </CardFooter>
+          </Card>
+        ) : (
+          <>
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center">
+                <span className="text-sm font-medium mr-2">
+                  Question {currentQuestionIndex + 1} of {exam.questions.length}
+                </span>
+                <Progress value={progressPercentage} className="w-40 h-2" />
+                <span className="text-sm text-muted-foreground ml-2">
+                  {answeredQuestionsCount}/{exam.questions.length} answered
+                </span>
+              </div>
+              
+              {exam.timeLimit && (
+                <div className="flex items-center text-sm">
+                  <Clock className="h-4 w-4 mr-1" />
+                  <span className={timeLeft !== null && timeLeft < 5 ? "text-red-500 font-bold" : ""}>
+                    {formatTimeLeft()}
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            <Card className="mb-6">
+              <CardContent className="pt-6">
+                {currentQuestion && (
+                  <>
+                    <h2 className="text-xl font-bold mb-4">{currentQuestion.title}</h2>
+                    {currentQuestion.description && (
+                      <p className="mb-6 text-muted-foreground">{currentQuestion.description}</p>
+                    )}
+                    
+                    {currentQuestion.type === "MULTIPLE_CHOICE" && currentQuestion.choices && (
+                      <div className="space-y-3">
+                        {currentQuestion.choices.map((choice, index) => (
+                          <div 
+                            key={index}
+                            className={`p-4 border rounded-md cursor-pointer transition-colors ${
+                              selectedAnswers[currentQuestionIndex] === index 
+                                ? "bg-primary/10 border-primary" 
+                                : "hover:bg-muted"
+                            }`}
+                            onClick={() => handleAnswerSelect(index)}
+                          >
+                            {choice}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {currentQuestion.type === "OPEN_ENDED" && (
+                      <div className="p-6 border rounded-md">
+                        <h3 className="font-medium mb-2">Open-Ended Question</h3>
+                        <p className="text-muted-foreground">
+                          Please write your answer on paper. This question will be manually graded.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+            
+            <div className="flex justify-between">
+              <Button 
+                variant="outline"
+                onClick={handlePrevQuestion}
+                disabled={currentQuestionIndex <= 0}
+              >
+                Previous Question
+              </Button>
+              
+              {currentQuestionIndex < exam.questions.length - 1 ? (
+                <Button 
+                  onClick={handleNextQuestion}
+                >
+                  Next Question
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => setShowConfirmDialog(true)}
+                  variant="default"
+                >
+                  Submit Exam
+                </Button>
+              )}
+            </div>
+            
+            <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Submit Exam</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to submit your exam? 
+                    {answeredQuestionsCount < exam.questions.length && (
+                      <span className="text-amber-600 font-medium block mt-2">
+                        Warning: You have only answered {answeredQuestionsCount} out of {exam.questions.length} questions.
+                      </span>
+                    )}
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowConfirmDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setShowConfirmDialog(false);
+                      handleExamSubmit();
+                    }}
+                  >
+                    Submit Exam
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
       </div>
     </MainLayout>
   );

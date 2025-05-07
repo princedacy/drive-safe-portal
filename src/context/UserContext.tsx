@@ -7,13 +7,17 @@ import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE, UserRole } from "@/types/UserR
 const API_BASE_URL = "https://dev.backend.ikizamini.hillygeeks.com/api/v1";
 
 // Extended user type with admin properties
-interface ExtendedUser extends Omit<User, "phone"> {
+interface ExtendedUser {
+  id: string;
+  email: string;
   address?: string;
   type?: string;
   phone?: string;
   name?: string;
   firstName?: string;
   lastName?: string;
+  role: UserRole;
+  assignedExams?: string[];
 }
 
 interface UserContextType {
@@ -153,12 +157,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // Set authorization header
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
+      // Format phone number correctly
+      const phone = adminData.phone?.startsWith('+') ? adminData.phone : `+${adminData.phone}`;
+      
       // Create admin via API
       const response = await api.post('/super/organizations/create', {
         name: adminData.name,
         address: adminData.address,
         type: adminData.type,
-        phone: adminData.phone,
+        phone: phone,
         email: adminData.email,
       });
       
@@ -191,12 +198,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // Set authorization header
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
+      // Format phone number correctly if provided
+      const phone = adminData.phone?.startsWith('+') ? adminData.phone : adminData.phone ? `+${adminData.phone}` : undefined;
+      
       // Update admin via API
       const response = await api.put(`/super/organizations/${adminId}`, {
         name: adminData.name,
         address: adminData.address,
         type: adminData.type,
-        phone: adminData.phone,
+        phone: phone,
         email: adminData.email,
       });
       
@@ -256,7 +266,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         loadAdmins,
         addUser,
         createAdmin,
-        updateAdmin, // Add the new function to the context
+        updateAdmin,
         updateUser,
         deleteUser,
         sendInviteEmail,

@@ -1,428 +1,423 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useForm, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useNavigate, useParams } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { useAuth } from "@/context/AuthContext";
-import { useExams } from "@/context/ExamContext";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { useExams, Question } from "@/context/ExamContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, ArrowLeft, ArrowRight } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Loader2 } from "lucide-react";
+
+// Schema validation for the question form
+const questionSchema = z.object({
+  title: z.string().min(3, "Question title must be at least 3 characters"),
+  description: z.string().optional(),
+  type: z.enum(["MULTIPLE_CHOICE", "OPEN_ENDED"]),
+  choices: z.array(z.string()).optional(),
+});
+
+// Schema validation for the exam form
+const examSchema = z.object({
+  title: z.string().min(3, "Exam title must be at least 3 characters"),
+  description: z.string().min(10, "Please provide a description of at least 10 characters"),
+  timeLimit: z.coerce.number().int().positive().optional(),
+  passingScore: z.coerce.number().int().min(1).max(100).optional(),
+  questions: z.array(questionSchema).min(1, "Please add at least one question"),
+});
+
+type ExamFormValues = z.infer<typeof examSchema>;
 
 export default function CreateExam() {
-  const { currentUser } = useAuth();
-  const { createExam } = useExams();
+  const { examId } = useParams<{ examId: string }>();
+  const isEditing = Boolean(examId);
+  const { exams, createExam, fetchExamById, updateExam } = useExams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [currentStep, setCurrentStep] = useState(0);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [timeLimit, setTimeLimit] = useState(30);
-  const [passingScore, setPassingScore] = useState(70);
-  const [questions, setQuestions] = useState<Array<{
-    id: string;
-    text: string;
-    options: string[];
-    correctOption: number;
-    image?: string;
-  }>>([
-    {
-      id: `q-${Date.now()}`,
-      text: "",
-      options: ["", "", "", ""],
-      correctOption: 0,
-    }
-  ]);
+  // Find the exam if in edit mode
+  const currentExam = exams.find(exam => exam.id === examId);
   
-  const handleQuestionChange = (index: number, field: string, value: string) => {
-    const newQuestions = [...questions];
-    newQuestions[index] = { ...newQuestions[index], [field]: value };
-    setQuestions(newQuestions);
-  };
-  
-  const handleOptionChange = (questionIndex: number, optionIndex: number, value: string) => {
-    const newQuestions = [...questions];
-    newQuestions[questionIndex].options[optionIndex] = value;
-    setQuestions(newQuestions);
-  };
-  
-  const handleCorrectOptionChange = (questionIndex: number, optionIndex: number) => {
-    const newQuestions = [...questions];
-    newQuestions[questionIndex].correctOption = optionIndex;
-    setQuestions(newQuestions);
-  };
-  
-  const addQuestion = () => {
-    setQuestions([
-      ...questions,
-      {
-        id: `q-${Date.now()}`,
-        text: "",
-        options: ["", "", "", ""],
-        correctOption: 0,
-      }
-    ]);
-  };
-  
-  const removeQuestion = (index: number) => {
-    if (questions.length > 1) {
-      const newQuestions = [...questions];
-      newQuestions.splice(index, 1);
-      setQuestions(newQuestions);
-    } else {
-      toast({
-        title: "Cannot remove question",
-        description: "An exam must have at least one question.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const validateBasicInfo = () => {
-    if (!title.trim()) {
-      toast({
-        title: "Missing title",
-        description: "Please provide a title for the exam.",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
-    if (!description.trim()) {
-      toast({
-        title: "Missing description",
-        description: "Please provide a description for the exam.",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
-    if (timeLimit <= 0) {
-      toast({
-        title: "Invalid time limit",
-        description: "Time limit must be greater than 0 minutes.",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
-    if (passingScore < 0 || passingScore > 100) {
-      toast({
-        title: "Invalid passing score",
-        description: "Passing score must be between 0 and 100 percent.",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
-    return true;
-  };
-  
-  const validateQuestions = () => {
-    for (let i = 0; i < questions.length; i++) {
-      const q = questions[i];
-      
-      if (!q.text.trim()) {
-        toast({
-          title: `Question ${i+1} is empty`,
-          description: "Please provide text for all questions.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      for (let j = 0; j < q.options.length; j++) {
-        if (!q.options[j].trim()) {
-          toast({
-            title: `Empty option in question ${i+1}`,
-            description: `Option ${j+1} is empty. Please provide text for all options.`,
-            variant: "destructive",
-          });
-          return false;
+  // Initialize the form with default values or existing exam data
+  const form = useForm<ExamFormValues>({
+    resolver: zodResolver(examSchema),
+    defaultValues: isEditing && currentExam
+      ? {
+          title: currentExam.title,
+          description: currentExam.description,
+          timeLimit: currentExam.timeLimit,
+          passingScore: currentExam.passingScore,
+          questions: currentExam.questions.map(q => ({
+            title: q.title,
+            description: q.description,
+            type: q.type,
+            choices: q.choices || [],
+          })),
         }
-      }
-    }
+      : {
+          title: "",
+          description: "",
+          timeLimit: 30,
+          passingScore: 70,
+          questions: [
+            {
+              title: "",
+              description: "",
+              type: "MULTIPLE_CHOICE",
+              choices: ["", "", "", ""],
+            },
+          ],
+        },
+  });
+  
+  // Use field array for dynamic questions
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "questions",
+  });
+  
+  // Watch for question type changes
+  const watchQuestionTypes = form.watch("questions");
+  
+  // Handle form submission
+  const onSubmit = async (data: ExamFormValues) => {
+    setIsSubmitting(true);
     
-    return true;
-  };
-  
-  const handleNext = () => {
-    if (currentStep === 0) {
-      if (validateBasicInfo()) {
-        setCurrentStep(1);
-      }
-    } else if (currentStep === 1) {
-      if (validateQuestions()) {
-        setCurrentStep(2);
-      }
-    }
-  };
-  
-  const handleBack = () => {
-    setCurrentStep(currentStep - 1);
-  };
-  
-  const handleSubmit = () => {
-    if (validateBasicInfo() && validateQuestions()) {
-      createExam({
-        title,
-        description,
-        timeLimit,
-        passingScore,
-        questions,
-        createdBy: currentUser?.id || "",
-      });
+    try {
+      // Format the questions properly
+      const formattedQuestions: Question[] = data.questions.map((q, index) => ({
+        id: currentExam?.questions[index]?.id || `q${index + 1}`,
+        title: q.title,
+        description: q.description || "",
+        type: q.type,
+        choices: q.type === "MULTIPLE_CHOICE" ? q.choices || [] : [],
+        correctOption: 0, // Default correct option
+      }));
       
-      toast({
-        title: "Exam created",
-        description: "Your exam has been created successfully.",
-      });
+      if (isEditing && currentExam) {
+        // Update existing exam
+        await updateExam({
+          ...currentExam,
+          title: data.title,
+          description: data.description,
+          timeLimit: data.timeLimit,
+          passingScore: data.passingScore,
+          questions: formattedQuestions,
+        });
+        
+        toast({
+          title: "Exam updated",
+          description: `${data.title} has been updated successfully.`,
+        });
+      } else {
+        // Create new exam
+        await createExam({
+          title: data.title,
+          description: data.description,
+          timeLimit: data.timeLimit,
+          passingScore: data.passingScore,
+          questions: formattedQuestions,
+        });
+        
+        toast({
+          title: "Exam created",
+          description: `${data.title} has been created successfully.`,
+        });
+      }
       
       navigate("/exams");
+    } catch (error) {
+      console.error("Error saving exam:", error);
+      toast({
+        title: "Error",
+        description: `Failed to ${isEditing ? 'update' : 'create'} exam. Please try again.`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
-  const steps = [
-    { title: "Basic Information", description: "Set up the exam details" },
-    { title: "Questions", description: "Add multiple-choice questions" },
-    { title: "Review", description: "Review and create your exam" }
-  ];
+  // Add a new question
+  const addQuestion = () => {
+    append({
+      title: "",
+      description: "",
+      type: "MULTIPLE_CHOICE",
+      choices: ["", "", "", ""],
+    });
+  };
   
   return (
     <MainLayout>
       <div className="container mx-auto py-6">
-        <div className="mb-6 flex items-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mr-2"
-            onClick={() => navigate("/exams")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Exams
-          </Button>
-          <h1 className="text-3xl font-bold">Create New Exam</h1>
-        </div>
-        
-        <div className="mb-6">
-          <div className="flex justify-between mb-8">
-            {steps.map((step, index) => (
-              <div
-                key={index}
-                className={`flex-1 text-center ${
-                  index < steps.length - 1 
-                    ? "border-t-2 border-muted relative" 
-                    : ""
-                }`}
-                style={{
-                  borderColor: index <= currentStep ? "hsl(var(--primary))" : "",
-                }}
-              >
-                <div 
-                  className={`w-10 h-10 mx-auto -mt-5 rounded-full flex items-center justify-center ${
-                    index <= currentStep 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {index + 1}
-                </div>
-                <div className="mt-2">
-                  <p className="font-medium">{step.title}</p>
-                  <p className="text-xs text-muted-foreground">{step.description}</p>
-                </div>
-              </div>
-            ))}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <Button variant="ghost" onClick={() => navigate("/exams")} className="mr-4">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Exams
+            </Button>
+            <h1 className="text-3xl font-bold">{isEditing ? "Edit Exam" : "Create Exam"}</h1>
           </div>
         </div>
         
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            {currentStep === 0 && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Exam Title</Label>
-                  <Input
-                    id="title"
-                    placeholder="e.g., Basic Traffic Rules Exam"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Exam Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Exam Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter exam title" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        A clear title for your exam.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe what this exam will test"
-                    className="min-h-[100px]"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Enter exam description"
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Describe what this exam covers and its purpose.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="timeLimit">Time Limit (minutes)</Label>
-                    <Input
-                      id="timeLimit"
-                      type="number"
-                      min="1"
-                      value={timeLimit}
-                      onChange={(e) => setTimeLimit(parseInt(e.target.value) || 0)}
-                    />
-                  </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="timeLimit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Time Limit (minutes)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            step="1"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Leave empty for no time limit.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="passingScore">Passing Score (%)</Label>
-                    <Input
-                      id="passingScore"
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={passingScore}
-                      onChange={(e) => setPassingScore(parseInt(e.target.value) || 0)}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="passingScore"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Passing Score (%)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="100"
+                            step="1"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Percentage required to pass this exam.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              </div>
-            )}
+              </CardContent>
+            </Card>
             
-            {currentStep === 1 && (
-              <div className="space-y-6">
-                <Tabs defaultValue="1" className="w-full">
-                  <div className="flex items-center justify-between mb-4">
-                    <TabsList>
-                      {questions.map((_, index) => (
-                        <TabsTrigger key={index} value={(index + 1).toString()}>
-                          Question {index + 1}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                    <Button onClick={addQuestion} size="sm" variant="outline">
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Question
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Questions</h2>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={addQuestion}
+                  className="flex items-center"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Question
+                </Button>
+              </div>
+              
+              {fields.map((field, index) => (
+                <Card key={field.id} className="relative">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-lg">Question {index + 1}</CardTitle>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => remove(index)}
+                      disabled={fields.length <= 1}
+                      className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  </div>
-                  
-                  {questions.map((question, qIndex) => (
-                    <TabsContent key={qIndex} value={(qIndex + 1).toString()} className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-medium">Question {qIndex + 1}</h3>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name={`questions.${index}.title`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Question Text</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter question text" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name={`questions.${index}.description`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Additional details or context" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name={`questions.${index}.type`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Question Type</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select question type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="MULTIPLE_CHOICE">Multiple Choice</SelectItem>
+                              <SelectItem value="OPEN_ENDED">Open Ended</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {watchQuestionTypes[index]?.type === "MULTIPLE_CHOICE" && (
+                      <div className="space-y-4">
+                        <FormLabel>Answer Options</FormLabel>
+                        {(watchQuestionTypes[index]?.choices || []).map((_, choiceIndex) => (
+                          <FormField
+                            key={choiceIndex}
+                            control={form.control}
+                            name={`questions.${index}.choices.${choiceIndex}`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <div className="flex items-center space-x-2">
+                                  <FormControl>
+                                    <Input placeholder={`Option ${choiceIndex + 1}`} {...field} />
+                                  </FormControl>
+                                  {choiceIndex > 1 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const newChoices = [...(form.getValues(`questions.${index}.choices`) || [])];
+                                        newChoices.splice(choiceIndex, 1);
+                                        form.setValue(`questions.${index}.choices`, newChoices);
+                                      }}
+                                      className="text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        ))}
+                        
                         <Button
-                          variant="ghost"
+                          type="button"
+                          variant="outline"
                           size="sm"
-                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => removeQuestion(qIndex)}
+                          onClick={() => {
+                            const currentChoices = form.getValues(`questions.${index}.choices`) || [];
+                            form.setValue(`questions.${index}.choices`, [...currentChoices, ""]);
+                          }}
                         >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Remove
+                          Add Option
                         </Button>
                       </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor={`q-${qIndex}-text`}>Question Text</Label>
-                        <Textarea
-                          id={`q-${qIndex}-text`}
-                          placeholder="Enter your question here"
-                          value={question.text}
-                          onChange={(e) => handleQuestionChange(qIndex, "text", e.target.value)}
-                        />
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <h4 className="text-sm font-medium">Options</h4>
-                        {question.options.map((option, oIndex) => (
-                          <div key={oIndex} className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              id={`q-${qIndex}-o-${oIndex}`}
-                              name={`q-${qIndex}-correct`}
-                              className="w-4 h-4 border-primary text-primary focus:ring-primary"
-                              checked={question.correctOption === oIndex}
-                              onChange={() => handleCorrectOptionChange(qIndex, oIndex)}
-                            />
-                            <Input
-                              id={`q-${qIndex}-o-${oIndex}-text`}
-                              placeholder={`Option ${oIndex + 1}`}
-                              value={option}
-                              onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
-                              className="flex-1"
-                            />
-                          </div>
-                        ))}
-                        <p className="text-sm text-muted-foreground">
-                          Select the radio button next to the correct answer.
-                        </p>
-                      </div>
-                    </TabsContent>
-                  ))}
-                </Tabs>
-              </div>
-            )}
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
             
-            {currentStep === 2 && (
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium">Exam Summary</h3>
-                  <div className="bg-muted p-4 rounded-md">
-                    <p><strong>Title:</strong> {title}</p>
-                    <p><strong>Description:</strong> {description}</p>
-                    <p><strong>Time Limit:</strong> {timeLimit} minutes</p>
-                    <p><strong>Passing Score:</strong> {passingScore}%</p>
-                    <p><strong>Number of Questions:</strong> {questions.length}</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium">Questions Preview</h3>
-                  <div className="space-y-4">
-                    {questions.map((q, qIndex) => (
-                      <div key={qIndex} className="bg-muted p-4 rounded-md">
-                        <p className="font-medium">Question {qIndex + 1}: {q.text}</p>
-                        <div className="mt-2 space-y-1">
-                          {q.options.map((option, oIndex) => (
-                            <p key={oIndex} className={q.correctOption === oIndex ? "text-success font-medium" : ""}>
-                              {String.fromCharCode(65 + oIndex)}. {option} 
-                              {q.correctOption === oIndex && " (Correct)"}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-          
-          <CardFooter className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              disabled={currentStep === 0}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-            
-            {currentStep < 2 ? (
-              <Button onClick={handleNext}>
-                Next
-                <ArrowRight className="ml-2 h-4 w-4" />
+            <div className="flex justify-end">
+              <Button 
+                type="submit" 
+                className="min-w-[120px]" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isEditing ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  <>{isEditing ? "Update Exam" : "Create Exam"}</>
+                )}
               </Button>
-            ) : (
-              <Button onClick={handleSubmit}>
-                Create Exam
-              </Button>
-            )}
-          </CardFooter>
-        </Card>
+            </div>
+          </form>
+        </Form>
       </div>
     </MainLayout>
   );

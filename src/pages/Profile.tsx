@@ -1,87 +1,97 @@
 
-import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/context/AuthContext";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { LogOut, User } from "lucide-react";
 
 export default function Profile() {
-  const { currentUser } = useAuth();
-  const [name, setName] = useState(currentUser?.name || "");
-  const [email] = useState(currentUser?.email || "");
-  const [isSaving, setIsSaving] = useState(false);
-  const { toast } = useToast();
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    // In a real app, you would update the user profile here
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been successfully updated.",
-    });
-    
-    setIsSaving(false);
-  };
-
+  const { currentUser, logout } = useAuth();
+  
   return (
     <MainLayout>
       <div className="container mx-auto py-6">
-        <h1 className="text-3xl font-bold mb-6">Profile Settings</h1>
+        <h1 className="text-3xl font-bold mb-8">Your Profile</h1>
         
-        <div className="grid grid-cols-1 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>
-                Update your personal details
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  value={email}
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="md:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Full Name</p>
+                    <p className="font-medium">
+                      {currentUser?.firstName || currentUser?.name || 'Not provided'}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" disabled>
+                    Edit
+                  </Button>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email Address</p>
+                    <p className="font-medium">
+                      {currentUser?.email || 'Not provided'}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" disabled>
+                    Edit
+                  </Button>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Phone Number</p>
+                    <p className="font-medium">
+                      {currentUser?.phone || 'Not provided'}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" disabled>
+                    Edit
+                  </Button>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Account Type</p>
+                    <p className="font-medium">{currentUser?.role}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start" 
                   disabled
-                  type="email"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Email cannot be changed
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Input
-                  id="role"
-                  value={currentUser?.role}
-                  disabled
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
-                ) : null}
-                Save Changes
-              </Button>
-            </CardFooter>
-          </Card>
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Change Password
+                </Button>
+                
+                <Button 
+                  variant="destructive" 
+                  className="w-full justify-start"
+                  onClick={logout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </MainLayout>
