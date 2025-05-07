@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import axios from "axios";
 
@@ -68,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     console.log('Login attempt with:', { email, password });
     try {
-      // Corrected endpoint with hyphen: 'signin' -> 'sign-in'
+      // Use sign-in endpoint
       const response = await api.post('/auth/sign-in', {
         email,
         password,
@@ -76,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       console.log('Login response:', response.data);
 
-      // Extract token and user data
+      // Extract token from response
       const { data } = response.data;
       const authToken = data.token;
       
@@ -85,34 +84,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
       localStorage.setItem("authToken", authToken);
       
-      // Make another request to get user data
+      // Extract user info from JWT token (as a workaround for missing user endpoint)
       try {
-        const userResponse = await api.get('/users/me', {
-          headers: { Authorization: `Bearer ${authToken}` }
-        });
+        // Decode JWT token to get user information
+        const tokenPayload = JSON.parse(atob(authToken.split('.')[1]));
+        console.log('Decoded token payload:', tokenPayload);
         
-        console.log('User data response:', userResponse.data);
-        
-        // Extract user data
-        const userData = userResponse.data.data;
-        
-        // Create a user object that matches our User interface
+        // Create a minimal user object from token data
         const user: User = {
-          id: userData.id || userData._id,
-          email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          phone: userData.phone || '',
-          role: userData.role as UserRole,
-          assignedExams: userData.assignedExams || [],
+          id: tokenPayload.id || '',
+          email: email, // Use the email from login
+          firstName: '', // These might need to be populated later
+          lastName: '',
+          phone: '',
+          role: tokenPayload.role as UserRole,
+          assignedExams: [],
         };
+        
+        console.log('Created user object:', user);
         
         // Save user data
         setCurrentUser(user);
         localStorage.setItem("ikizaminiUser", JSON.stringify(user));
       } catch (error) {
-        console.error('Error fetching user data:', error);
-        throw new Error('Failed to fetch user data after login');
+        console.error('Error extracting user data from token:', error);
+        throw new Error('Failed to process user data after login');
       }
     } catch (error) {
       console.error('Login error:', error);
