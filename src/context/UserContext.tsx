@@ -1,21 +1,37 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { User, UserRole } from "./AuthContext";
+import axios from "axios";
+
+const API_BASE_URL = "https://dev.backend.ikizamini.hillygeeks.com/api/v1";
 
 // Extended user type with admin properties
 interface ExtendedUser extends Omit<User, "phone"> {
   address?: string;
   type?: string;
   phone?: string;
+  name?: string;
 }
 
 interface UserContextType {
   users: ExtendedUser[];
+  admins: ExtendedUser[];
+  loadAdmins: () => Promise<void>;
   addUser: (user: Omit<ExtendedUser, "id">) => void;
+  createAdmin: (adminData: Omit<ExtendedUser, "id" | "role">) => Promise<void>;
   updateUser: (user: ExtendedUser) => void;
   deleteUser: (userId: string) => void;
   sendInviteEmail: (email: string, role: UserRole) => Promise<void>;
+  isLoading: boolean;
 }
+
+// Create axios instance with base configuration
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // Sample users
 const MOCK_USERS: ExtendedUser[] = [
@@ -26,16 +42,7 @@ const MOCK_USERS: ExtendedUser[] = [
     lastName: "Admin",
     role: "SUPER_ADMIN",
     phone: "1234567890",
-  },
-  {
-    id: "2",
-    email: "admin@example.com",
-    firstName: "Admin",
-    lastName: "User",
-    role: "ADMIN",
-    address: "New York, USA",
-    type: "TESTING_CENTER",
-    phone: "1234567890",
+    name: "Super Admin",
   },
   {
     id: "3",
@@ -44,6 +51,7 @@ const MOCK_USERS: ExtendedUser[] = [
     lastName: "User 1",
     role: "USER",
     phone: "1234567890",
+    name: "Test User 1",
     assignedExams: ["exam1", "exam2"],
   },
   {
@@ -53,6 +61,7 @@ const MOCK_USERS: ExtendedUser[] = [
     lastName: "User 2",
     role: "USER",
     phone: "1234567890",
+    name: "Test User 2",
     assignedExams: ["exam2"],
   },
 ];
@@ -61,11 +70,61 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<ExtendedUser[]>([]);
+  const [admins, setAdmins] = useState<ExtendedUser[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // Load mock users
     setUsers(MOCK_USERS);
+    
+    // Load real admin data
+    loadAdmins();
   }, []);
+
+  const loadAdmins = async () => {
+    setIsLoading(true);
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem("authToken");
+      
+      if (!token) {
+        console.error("No auth token available");
+        return;
+      }
+      
+      // Set authorization header
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Fetch admins from API
+      const response = await api.get('/super/organizations', {
+        params: {
+          page: 0,
+          limit: 100,
+        }
+      });
+      
+      console.log('Admin organizations response:', response.data);
+      
+      // Transform response data to match our ExtendedUser interface
+      const adminUsers: ExtendedUser[] = response.data.data.map((admin: any) => ({
+        id: admin.id || admin._id,
+        email: admin.email,
+        firstName: "",
+        lastName: "",
+        name: admin.name,
+        role: "ADMIN" as UserRole,
+        address: admin.address,
+        type: admin.type,
+        phone: admin.phone,
+      }));
+      
+      setAdmins(adminUsers);
+    } catch (error) {
+      console.error('Error loading admin organizations:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const addUser = (userData: Omit<ExtendedUser, "id">) => {
     const newUser: ExtendedUser = {
@@ -74,6 +133,43 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
     
     setUsers((prevUsers) => [...prevUsers, newUser]);
+  };
+
+  const createAdmin = async (adminData: Omit<ExtendedUser, "id" | "role">) => {
+    setIsLoading(true);
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem("authToken");
+      
+      if (!token) {
+        console.error("No auth token available");
+        throw new Error("Authentication required");
+      }
+      
+      // Set authorization header
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Create admin via API
+      const response = await api.post('/super/organizations/create', {
+        name: adminData.name,
+        address: adminData.address,
+        type: adminData.type,
+        phone: adminData.phone,
+        email: adminData.email,
+      });
+      
+      console.log('Create admin response:', response.data);
+      
+      // Reload the admin list to get the newly created admin
+      await loadAdmins();
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error creating admin organization:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updateUser = (updatedUser: ExtendedUser) => {
@@ -86,6 +182,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const deleteUser = (userId: string) => {
     setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+    setAdmins((prevAdmins) => prevAdmins.filter((admin) => admin.id !== userId));
   };
 
   const sendInviteEmail = async (email: string, role: UserRole) => {
@@ -100,6 +197,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       email,
       firstName: email.split('@')[0], // Default first name from email
       lastName: "", // Empty last name as default
+      name: email.split('@')[0], // Default name from email
       role,
       phone: "", // Empty phone as default
       assignedExams: [],
@@ -112,10 +210,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     <UserContext.Provider
       value={{
         users,
+        admins,
+        loadAdmins,
         addUser,
+        createAdmin,
         updateUser,
         deleteUser,
         sendInviteEmail,
+        isLoading,
       }}
     >
       {children}

@@ -1,14 +1,14 @@
 
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { User, UserRole } from "@/context/AuthContext";
+import { useAuth, User, UserRole } from "@/context/AuthContext";
 
 // Ensure the User type has the admin properties
 export interface ExtendedUser extends Omit<User, "phone"> {
   address?: string;
   type?: string;
   phone?: string;
+  name?: string;
 }
 
 interface ProtectedRouteProps {

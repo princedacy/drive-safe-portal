@@ -2,13 +2,13 @@
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useUsers } from "@/context/UserContext";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, UserRole } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, UserPlus, Mail, Trash2, UserCog } from "lucide-react";
+import { Search, UserPlus, Mail, Trash2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -23,23 +23,23 @@ export default function UsersManagement() {
   const { currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
-  const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
+  const [newUserRole, setNewUserRole] = useState<UserRole>("USER");
   const [isInviting, setIsInviting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
   
-  const isSuperAdmin = currentUser?.role === "superadmin";
+  const isSuperAdmin = currentUser?.role === "SUPER_ADMIN";
   
   // Filter users based on role and search
   const filteredUsers = users.filter((user) => {
     // Superadmins can see everyone, admins only see users
-    if (!isSuperAdmin && user.role !== "user") {
+    if (!isSuperAdmin && user.role !== "USER") {
       return false;
     }
     
     // Filter by search query
     const matchesSearch = 
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.name?.toLowerCase().includes(searchQuery.toLowerCase()) || '') ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.role.toLowerCase().includes(searchQuery.toLowerCase());
       
@@ -90,12 +90,12 @@ export default function UsersManagement() {
     }
   };
   
-  const handleDeleteUser = (userId: string, userName: string) => {
+  const handleDeleteUser = (userId: string, userName: string | undefined) => {
     deleteUser(userId);
     
     toast({
       title: "User deleted",
-      description: `${userName} has been removed from the system.`,
+      description: `${userName || "User"} has been removed from the system.`,
     });
   };
   
@@ -135,7 +135,7 @@ export default function UsersManagement() {
                   <Label htmlFor="role">Role</Label>
                   <Select 
                     value={newUserRole} 
-                    onValueChange={(value: "admin" | "user") => setNewUserRole(value)}
+                    onValueChange={(value: UserRole) => setNewUserRole(value)}
                     disabled={!isSuperAdmin}
                   >
                     <SelectTrigger id="role">
@@ -143,9 +143,9 @@ export default function UsersManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       {isSuperAdmin && (
-                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="ADMIN">Admin</SelectItem>
                       )}
-                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="USER">User</SelectItem>
                     </SelectContent>
                   </Select>
                   {!isSuperAdmin && (
@@ -196,13 +196,13 @@ export default function UsersManagement() {
             <div>
               {filteredUsers.map((user) => (
                 <div key={user.id} className="flex items-center p-4 border-t">
-                  <div className="flex-1 truncate">{user.name}</div>
+                  <div className="flex-1 truncate">{user.name || `${user.firstName} ${user.lastName}`}</div>
                   <div className="flex-1 truncate">{user.email}</div>
                   <div className="w-24">
                     <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                      user.role === "superadmin" 
+                      user.role === "SUPER_ADMIN" 
                         ? "bg-accent text-accent-foreground" 
-                        : user.role === "admin"
+                        : user.role === "ADMIN"
                         ? "bg-secondary text-secondary-foreground"
                         : "bg-muted text-muted-foreground"
                     }`}>
@@ -214,8 +214,8 @@ export default function UsersManagement() {
                       variant="ghost"
                       size="sm"
                       className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => handleDeleteUser(user.id, user.name)}
-                      disabled={user.id === currentUser?.id || user.role === "superadmin"}
+                      onClick={() => handleDeleteUser(user.id, user.name || `${user.firstName} ${user.lastName}`)}
+                      disabled={user.id === currentUser?.id || user.role === "SUPER_ADMIN"}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useUsers } from "@/context/UserContext";
 import { Button } from "@/components/ui/button";
@@ -26,10 +26,16 @@ const adminFormSchema = z.object({
 type AdminFormValues = z.infer<typeof adminFormSchema>;
 
 export default function AdminManagement() {
-  const { users, addUser, deleteUser } = useUsers();
+  const { admins, createAdmin, deleteUser, loadAdmins, isLoading } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  
+  // Load admins on component mount
+  useEffect(() => {
+    loadAdmins();
+  }, []);
   
   // Setup form with react-hook-form and zod validation
   const form = useForm<AdminFormValues>({
@@ -43,38 +49,48 @@ export default function AdminManagement() {
     },
   });
   
-  // Filter only admin users
-  const adminUsers = users.filter((user) => 
-    user.role === "admin" && 
-    (user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     user.email.toLowerCase().includes(searchQuery.toLowerCase()))
+  // Filter admin users based on search query
+  const filteredAdmins = admins.filter((admin) => 
+    (admin.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+     admin.email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
   
-  const handleCreateAdmin = (data: AdminFormValues) => {
-    addUser({
-      name: data.name,
-      email: data.email,
-      role: "admin",
-      address: data.address,
-      type: data.type,
-      phone: data.phone,
-    });
-    
-    toast({
-      title: "Admin created",
-      description: `${data.name} has been added as an admin.`,
-    });
-    
-    form.reset();
-    setDialogOpen(false);
+  const handleCreateAdmin = async (data: AdminFormValues) => {
+    setIsSubmitting(true);
+    try {
+      await createAdmin({
+        name: data.name,
+        email: data.email,
+        address: data.address,
+        type: data.type,
+        phone: data.phone,
+      });
+      
+      toast({
+        title: "Admin created",
+        description: `${data.name} has been added as an admin.`,
+      });
+      
+      form.reset();
+      setDialogOpen(false);
+    } catch (error) {
+      console.error('Error creating admin:', error);
+      toast({
+        title: "Failed to create admin",
+        description: "There was an error creating the admin. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
-  const handleDeleteAdmin = (userId: string, userName: string) => {
+  const handleDeleteAdmin = (userId: string, userName: string | undefined) => {
     deleteUser(userId);
     
     toast({
       title: "Admin deleted",
-      description: `${userName} has been removed from the admin list.`,
+      description: `${userName || "Admin"} has been removed from the admin list.`,
     });
   };
   
@@ -170,8 +186,12 @@ export default function AdminManagement() {
                   />
                   
                   <DialogFooter className="pt-4">
-                    <Button type="submit">
-                      <Save className="mr-2 h-4 w-4" />
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      ) : (
+                        <Save className="mr-2 h-4 w-4" />
+                      )}
                       Create Admin
                     </Button>
                   </DialogFooter>
@@ -202,13 +222,17 @@ export default function AdminManagement() {
                 <div className="w-24 text-right font-medium">Actions</div>
               </div>
               
-              {adminUsers.length > 0 ? (
+              {isLoading ? (
+                <div className="flex justify-center items-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                </div>
+              ) : filteredAdmins.length > 0 ? (
                 <div>
-                  {adminUsers.map((admin) => (
+                  {filteredAdmins.map((admin) => (
                     <div key={admin.id} className="flex items-center p-4 border-t">
                       <div className="flex-1 flex items-center">
                         <Shield className="h-4 w-4 mr-2 text-secondary" />
-                        <span>{admin.name}</span>
+                        <span>{admin.name || "Unnamed Admin"}</span>
                       </div>
                       <div className="flex-1">{admin.email}</div>
                       <div className="w-24 text-right">
