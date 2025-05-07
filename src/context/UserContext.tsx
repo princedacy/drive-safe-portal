@@ -157,11 +157,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // Set authorization header
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Format phone number correctly
-      const phone = adminData.phone?.startsWith('+') ? adminData.phone : `+${adminData.phone}`;
+      // Format phone number correctly - FIXED: handle phone number formatting correctly
+      let phone = adminData.phone || '';
+      if (phone && !phone.startsWith('+')) {
+        // If phone doesn't start with '+', add it
+        phone = `+${phone}`;
+      }
       
-      // Create admin via API
-      const response = await api.post('/super/organizations/create', {
+      // Create admin via API - FIXED: use the correct endpoint
+      const response = await api.post('/super/organizations', {
         name: adminData.name,
         address: adminData.address,
         type: adminData.type,
@@ -183,7 +187,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Add the update admin function
+  // Update the update admin function to use the correct endpoint
   const updateAdmin = async (adminId: string, adminData: Partial<Omit<ExtendedUser, "id" | "role">>) => {
     setIsLoading(true);
     try {
@@ -199,9 +203,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       // Format phone number correctly if provided
-      const phone = adminData.phone?.startsWith('+') ? adminData.phone : adminData.phone ? `+${adminData.phone}` : undefined;
+      let phone = adminData.phone || '';
+      if (phone && !phone.startsWith('+')) {
+        // If phone doesn't start with '+', add it
+        phone = `+${phone}`;
+      }
       
-      // Update admin via API
+      // Update admin via API - FIXED: Use correct endpoint structure
       const response = await api.put(`/super/organizations/${adminId}`, {
         name: adminData.name,
         address: adminData.address,

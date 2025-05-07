@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import axios from "axios";
 
@@ -217,7 +218,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
           id: exam.id || exam._id,
           title: exam.title,
           description: exam.description,
-          questions: exam.questions.map((question: any) => ({
+          questions: (exam.questions || []).map((question: any) => ({
             id: question.id || question._id,
             title: question.title,
             description: question.description,
@@ -228,6 +229,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
           createdAt: exam.createdAt,
         }));
         
+        // FIXED: Set exams to a combination of mock and fetched exams
         setExams([...MOCK_EXAMS, ...fetchedExams]);
       }
     } catch (error) {
@@ -261,7 +263,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
           id: exam.id || exam._id,
           title: exam.title,
           description: exam.description,
-          questions: exam.questions.map((question: any) => ({
+          questions: (exam.questions || []).map((question: any) => ({
             id: question.id || question._id,
             title: question.title,
             description: question.description,
@@ -302,6 +304,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
           description: q.description,
           type: q.type,
           choices: q.choices || [],
+          correctOption: q.type === "MULTIPLE_CHOICE" ? (q.correctOption || 0) : undefined,
         })),
       });
       
@@ -351,6 +354,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
         description: question.description,
         type: question.type,
         choices: question.choices || [],
+        correctOption: question.type === "MULTIPLE_CHOICE" ? (question.correctOption || 0) : undefined,
       });
       
       console.log('Add question response:', response.data);
@@ -390,6 +394,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
         description: question.description,
         type: question.type,
         choices: question.choices || [],
+        correctOption: question.type === "MULTIPLE_CHOICE" ? (question.correctOption || 0) : undefined,
       });
       
       console.log('Update question response:', response.data);
