@@ -1,15 +1,16 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import axios from "axios";
+import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE, UserRole } from "@/types/UserRole";
 
 const API_BASE_URL = "https://dev.backend.ikizamini.hillygeeks.com/api/v1";
-
-export type UserRole = "SUPER_ADMIN" | "ADMIN" | "USER";
 
 export interface User {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
+  name?: string;
   phone: string;
   role: UserRole;
   assignedExams?: string[];
@@ -94,9 +95,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const user: User = {
           id: tokenPayload.id || '',
           email: email, // Use the email from login
-          firstName: '', // These might need to be populated later
-          lastName: '',
-          phone: '',
+          firstName: tokenPayload.firstName || '', // These might need to be populated later
+          lastName: tokenPayload.lastName || '',
+          name: tokenPayload.name || '',
+          phone: tokenPayload.phone || '',
           role: tokenPayload.role as UserRole,
           assignedExams: [],
         };

@@ -8,6 +8,9 @@ import { LogOut, User } from "lucide-react";
 export default function Profile() {
   const { currentUser, logout } = useAuth();
   
+  // Generate display name from available properties
+  const displayName = currentUser?.firstName || currentUser?.name || currentUser?.email?.split('@')[0] || 'User';
+  
   return (
     <MainLayout>
       <div className="container mx-auto py-6">
@@ -24,7 +27,7 @@ export default function Profile() {
                   <div>
                     <p className="text-sm text-muted-foreground">Full Name</p>
                     <p className="font-medium">
-                      {currentUser?.firstName || (currentUser?.displayName ?? 'Not provided')}
+                      {currentUser?.firstName || (currentUser?.name ?? 'Not provided')}
                     </p>
                   </div>
                   <Button variant="outline" size="sm" disabled>

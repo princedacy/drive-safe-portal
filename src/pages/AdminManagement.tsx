@@ -14,8 +14,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-// Define schema for admin creation form
-const adminFormSchema = z.object({
+// Define schema for organization creation form
+const organizationFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   address: z.string().min(5, { message: "Address must be at least 5 characters" }),
   type: z.string().min(2, { message: "Type must be at least 2 characters" }),
@@ -33,11 +33,11 @@ const orgAdminFormSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
-type AdminFormValues = z.infer<typeof adminFormSchema>;
+type OrganizationFormValues = z.infer<typeof organizationFormSchema>;
 type OrgAdminFormValues = z.infer<typeof orgAdminFormSchema>;
 
 export default function AdminManagement() {
-  const { admins, createAdmin, deleteUser, loadAdmins, isLoading, updateAdmin, createOrganizationAdmin } = useUsers();
+  const { admins, createAdmin, deleteUser, loadAdmins, isLoading, updateAdmin, createOrganizationAdmin, loadOrganizationAdmins, organizationAdmins } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -45,6 +45,8 @@ export default function AdminManagement() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const [viewingOrgAdmins, setViewingOrgAdmins] = useState(false);
+  const [currentOrganization, setCurrentOrganization] = useState<any>(null);
   const { toast } = useToast();
   
   // Load admins on component mount
@@ -53,8 +55,8 @@ export default function AdminManagement() {
   }, []);
   
   // Setup form with react-hook-form and zod validation
-  const form = useForm<AdminFormValues>({
-    resolver: zodResolver(adminFormSchema),
+  const form = useForm<OrganizationFormValues>({
+    resolver: zodResolver(organizationFormSchema),
     defaultValues: {
       name: "",
       address: "",
@@ -65,8 +67,8 @@ export default function AdminManagement() {
   });
 
   // Setup edit form
-  const editForm = useForm<AdminFormValues>({
-    resolver: zodResolver(adminFormSchema),
+  const editForm = useForm<OrganizationFormValues>({
+    resolver: zodResolver(organizationFormSchema),
     defaultValues: {
       name: "",
       address: "",
@@ -90,12 +92,17 @@ export default function AdminManagement() {
   });
   
   // Filter admin users based on search query
-  const filteredAdmins = admins.filter((admin) => 
-    (admin.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     admin.email.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredAdmins = viewingOrgAdmins
+    ? organizationAdmins.filter((admin) => 
+        (admin.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         admin.email.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : admins.filter((admin) => 
+        (admin.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         admin.email.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
   
-  const handleCreateAdmin = async (data: AdminFormValues) => {
+  const handleCreateOrganization = async (data: OrganizationFormValues) => {
     setIsSubmitting(true);
     try {
       await createAdmin({
@@ -107,17 +114,17 @@ export default function AdminManagement() {
       });
       
       toast({
-        title: "Admin created",
-        description: `${data.name} has been added as an admin.`,
+        title: "Organization created",
+        description: `${data.name} has been added as an organization.`,
       });
       
       form.reset();
       setDialogOpen(false);
     } catch (error) {
-      console.error('Error creating admin:', error);
+      console.error('Error creating organization:', error);
       toast({
-        title: "Failed to create admin",
-        description: "There was an error creating the admin. Please try again.",
+        title: "Failed to create organization",
+        description: "There was an error creating the organization. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -153,7 +160,11 @@ export default function AdminManagement() {
       
       orgAdminForm.reset();
       setOrgAdminDialogOpen(false);
-      setSelectedOrgId(null);
+      
+      // Refresh the organization admins list if we're currently viewing them
+      if (viewingOrgAdmins && selectedOrgId) {
+        await loadOrganizationAdmins(selectedOrgId);
+      }
     } catch (error) {
       console.error('Error creating organization admin:', error);
       toast({
@@ -184,7 +195,7 @@ export default function AdminManagement() {
     setOrgAdminDialogOpen(true);
   };
   
-  const handleUpdateAdmin = async (data: AdminFormValues) => {
+  const handleUpdateAdmin = async (data: OrganizationFormValues) => {
     if (!currentAdminId) return;
     
     setIsSubmitting(true);
@@ -198,7 +209,7 @@ export default function AdminManagement() {
       });
       
       toast({
-        title: "Admin updated",
+        title: "Organization updated",
         description: `${data.name} has been updated successfully.`,
       });
       
@@ -208,8 +219,8 @@ export default function AdminManagement() {
     } catch (error) {
       console.error('Error updating admin:', error);
       toast({
-        title: "Failed to update admin",
-        description: "There was an error updating the admin. Please try again.",
+        title: "Failed to update organization",
+        description: "There was an error updating the organization. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -222,117 +233,150 @@ export default function AdminManagement() {
     
     toast({
       title: "Admin deleted",
-      description: `${userName || "Admin"} has been removed from the admin list.`,
+      description: `${userName || "Admin"} has been removed.`,
     });
+  };
+
+  const viewOrganizationAdmins = async (organization: any) => {
+    setCurrentOrganization(organization);
+    setViewingOrgAdmins(true);
+    setSearchQuery("");
+    await loadOrganizationAdmins(organization.id);
+  };
+  
+  const goBackToOrganizations = () => {
+    setViewingOrgAdmins(false);
+    setCurrentOrganization(null);
   };
   
   return (
     <MainLayout>
       <div className="container mx-auto py-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Admin Management</h1>
-          <div className="flex gap-2">
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Shield className="mr-2 h-4 w-4" />
-                  Create Organization
+          {viewingOrgAdmins ? (
+            <>
+              <div className="flex items-center">
+                <Button 
+                  variant="outline" 
+                  onClick={goBackToOrganizations}
+                  className="mr-2"
+                >
+                  Back to Organizations
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Create New Organization</DialogTitle>
-                  <DialogDescription>
-                    Fill in the details to create a new organization.
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleCreateAdmin)} className="space-y-4 py-2">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Organization Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter organization name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="address"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Address</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter address" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Type</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter organization type" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter phone number" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter email address" type="email" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <DialogFooter className="pt-4">
-                      <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                        ) : (
-                          <Save className="mr-2 h-4 w-4" />
+                <h1 className="text-3xl font-bold">
+                  {currentOrganization?.name || "Organization"} Admins
+                </h1>
+              </div>
+              <Button onClick={() => openOrgAdminDialog(currentOrganization.id)}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add Admin
+              </Button>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold">Admin Management</h1>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Create Organization
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Create New Organization</DialogTitle>
+                    <DialogDescription>
+                      Fill in the details to create a new organization.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleCreateOrganization)} className="space-y-4 py-2">
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Organization Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter organization name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
                         )}
-                        Create Organization
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-          </div>
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="address"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Address</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter address" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="type"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Type</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter organization type" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone Number</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter phone number" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter email address" type="email" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <DialogFooter className="pt-4">
+                        <Button type="submit" disabled={isSubmitting}>
+                          {isSubmitting ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                          ) : (
+                            <Save className="mr-2 h-4 w-4" />
+                          )}
+                          Create Organization
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
         </div>
         
         {/* Edit Admin Dialog */}
@@ -341,7 +385,7 @@ export default function AdminManagement() {
             <DialogHeader>
               <DialogTitle>Update Organization</DialogTitle>
               <DialogDescription>
-                Edit the details of this admin organization.
+                Edit the details of this organization.
               </DialogDescription>
             </DialogHeader>
             <Form {...editForm}>
@@ -545,7 +589,7 @@ export default function AdminManagement() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input 
-              placeholder="Search admins by name or email..." 
+              placeholder={viewingOrgAdmins ? "Search organization admins..." : "Search organizations..."} 
               className="pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -557,7 +601,9 @@ export default function AdminManagement() {
           <CardContent className="p-0">
             <div className="rounded-md overflow-hidden">
               <div className="flex items-center p-4 bg-muted">
-                <div className="flex-1 font-medium">Organization Name</div>
+                <div className="flex-1 font-medium">
+                  {viewingOrgAdmins ? "Admin Name" : "Organization Name"}
+                </div>
                 <div className="flex-1 font-medium">Email</div>
                 <div className="w-40 text-right font-medium">Actions</div>
               </div>
@@ -572,26 +618,40 @@ export default function AdminManagement() {
                     <div key={admin.id} className="flex items-center p-4 border-t">
                       <div className="flex-1 flex items-center">
                         <Shield className="h-4 w-4 mr-2 text-secondary" />
-                        <span>{admin.name || "Unnamed Admin"}</span>
+                        <span>{admin.name || "Unnamed"}</span>
                       </div>
                       <div className="flex-1">{admin.email}</div>
                       <div className="w-40 text-right flex justify-end">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-primary hover:bg-primary/10 hover:text-primary mr-1"
-                          onClick={() => openOrgAdminDialog(admin.id)}
-                        >
-                          <Users className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-primary hover:bg-primary/10 hover:text-primary mr-1"
-                          onClick={() => openEditDialog(admin)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        {!viewingOrgAdmins && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-primary hover:bg-primary/10 hover:text-primary mr-1"
+                            onClick={() => viewOrganizationAdmins(admin)}
+                          >
+                            <Users className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {viewingOrgAdmins && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-primary hover:bg-primary/10 hover:text-primary mr-1"
+                            onClick={() => openEditDialog(admin)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {!viewingOrgAdmins && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-primary hover:bg-primary/10 hover:text-primary mr-1"
+                            onClick={() => openEditDialog(admin)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -608,8 +668,8 @@ export default function AdminManagement() {
                 <div className="p-8 text-center">
                   <p className="text-muted-foreground">
                     {searchQuery
-                      ? "No admins match your search criteria"
-                      : "No admin users found"}
+                      ? "No results match your search criteria"
+                      : viewingOrgAdmins ? "No organization admins found" : "No organizations found"}
                   </p>
                 </div>
               )}
