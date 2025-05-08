@@ -2,7 +2,7 @@
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, User } from "@/context/AuthContext";
-import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE, UserRole } from "@/types/UserRole";
+import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE, ORGANIZATION_ADMIN_ROLE, UserRole } from "@/types/UserRole";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -41,7 +41,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     // Redirect to appropriate dashboard based on role
     if (currentUser.role === USER_ROLE) {
       return <Navigate to="/my-exams" replace />;
-    } else if (currentUser.role === ADMIN_ROLE) {
+    } else if (currentUser.role === ADMIN_ROLE || currentUser.role === ORGANIZATION_ADMIN_ROLE) {
       return <Navigate to="/exams" replace />;
     } else if (currentUser.role === SUPER_ADMIN_ROLE) {
       return <Navigate to="/admin-management" replace />;

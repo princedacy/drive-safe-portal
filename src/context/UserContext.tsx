@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { User } from "./AuthContext";
 import axios from "axios";
-import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE, UserRole } from "@/types/UserRole";
+import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE, ORGANIZATION_ADMIN_ROLE, UserRole } from "@/types/UserRole";
 
 const API_BASE_URL = "https://dev.backend.ikizamini.hillygeeks.com/api/v1";
 
@@ -26,6 +26,7 @@ interface UserContextType {
   loadAdmins: () => Promise<void>;
   addUser: (user: Omit<ExtendedUser, "id">) => void;
   createAdmin: (adminData: Omit<ExtendedUser, "id" | "role" | "firstName" | "lastName">) => Promise<void>;
+  createOrganizationAdmin: (organizationId: string, adminData: any) => Promise<void>;
   updateAdmin: (adminId: string, adminData: Partial<Omit<ExtendedUser, "id" | "role">>) => Promise<void>;
   updateUser: (user: ExtendedUser) => void;
   deleteUser: (userId: string) => void;
@@ -157,14 +158,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
       // Set authorization header
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Format phone number correctly - FIXED: handle phone number formatting correctly
+      // Format phone number correctly
       let phone = adminData.phone || '';
       if (phone && !phone.startsWith('+')) {
         // If phone doesn't start with '+', add it
-        phone = `+${phone}`;
+        // For phones starting with 0, replace it with +250
+        if (phone.startsWith('0')) {
+          phone = `+250${phone.substring(1)}`;
+        } else {
+          phone = `+${phone}`;
+        }
       }
       
-      // Create admin via API - FIXED: use the correct endpoint
+      // Create admin organization via API
       const response = await api.post('/super/organizations', {
         name: adminData.name,
         address: adminData.address,
@@ -173,7 +179,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         email: adminData.email,
       });
       
-      console.log('Create admin response:', response.data);
+      console.log('Create admin organization response:', response.data);
       
       // Reload the admin list to get the newly created admin
       await loadAdmins();
@@ -187,7 +193,57 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Update the update admin function to use the correct endpoint
+  // New function to create organization admin
+  const createOrganizationAdmin = async (organizationId: string, adminData: any) => {
+    setIsLoading(true);
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem("authToken");
+      
+      if (!token) {
+        console.error("No auth token available");
+        throw new Error("Authentication required");
+      }
+      
+      // Set authorization header
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Format phone number correctly
+      let phone = adminData.phone || '';
+      if (phone && !phone.startsWith('+')) {
+        // If phone doesn't start with '+', add it
+        // For phones starting with 0, replace it with +250
+        if (phone.startsWith('0')) {
+          phone = `+250${phone.substring(1)}`;
+        } else {
+          phone = `+${phone}`;
+        }
+      }
+      
+      // Create organization admin via API
+      const response = await api.post(`/super/organizations/${organizationId}/users`, {
+        name: adminData.name,
+        address: adminData.address,
+        type: adminData.type,
+        phone: phone,
+        email: adminData.email,
+        password: adminData.password,
+      });
+      
+      console.log('Create organization admin response:', response.data);
+      
+      // Reload the admin list to get the newly created admin
+      await loadAdmins();
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error creating organization admin:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const updateAdmin = async (adminId: string, adminData: Partial<Omit<ExtendedUser, "id" | "role">>) => {
     setIsLoading(true);
     try {
@@ -274,6 +330,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         loadAdmins,
         addUser,
         createAdmin,
+        createOrganizationAdmin,
         updateAdmin,
         updateUser,
         deleteUser,

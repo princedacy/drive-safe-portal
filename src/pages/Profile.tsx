@@ -24,7 +24,7 @@ export default function Profile() {
                   <div>
                     <p className="text-sm text-muted-foreground">Full Name</p>
                     <p className="font-medium">
-                      {currentUser?.firstName || (currentUser?.name ?? 'Not provided')}
+                      {currentUser?.firstName || (currentUser?.displayName ?? 'Not provided')}
                     </p>
                   </div>
                   <Button variant="outline" size="sm" disabled>

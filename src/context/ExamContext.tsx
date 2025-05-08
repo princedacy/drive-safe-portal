@@ -48,7 +48,7 @@ interface ExamContextType {
   exams: Exam[];
   userExamResults: UserExamResult[];
   createExam: (examData: Omit<Exam, "id" | "createdAt">) => Promise<void>;
-  updateExam: (exam: Exam) => void;
+  updateExam: (exam: Exam) => Promise<void>;
   deleteExam: (examId: string) => void;
   assignExamToUser: (examId: string, userId: string) => void;
   saveExamResult: (result: Omit<UserExamResult, "completedAt">, complete?: boolean) => void;
@@ -221,7 +221,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
           questions: (exam.questions || []).map((question: any) => ({
             id: question.id || question._id,
             title: question.title,
-            description: question.description,
+            description: question.description || "",
             type: question.type,
             choices: question.choices || [],
             correctOption: question.correctOption,
@@ -229,11 +229,14 @@ export function ExamProvider({ children }: { children: ReactNode }) {
           createdAt: exam.createdAt,
         }));
         
-        // FIXED: Set exams to a combination of mock and fetched exams
+        // Set exams to a combination of mock and fetched exams
         setExams([...MOCK_EXAMS, ...fetchedExams]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading exams:', error);
+      if (error.response?.data?.data?.allowedRole === "ORGANIZATION_ADMIN") {
+        console.log("Current user does not have ORGANIZATION_ADMIN role");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -266,7 +269,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
           questions: (exam.questions || []).map((question: any) => ({
             id: question.id || question._id,
             title: question.title,
-            description: question.description,
+            description: question.description || "",
             type: question.type,
             choices: question.choices || [],
             correctOption: question.correctOption,
@@ -295,23 +298,43 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       // Set authorization header
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
+      // Format questions correctly
+      const formattedQuestions = examData.questions.map(q => ({
+        title: q.title,
+        description: q.description || "",
+        type: q.type,
+        choices: q.type === "MULTIPLE_CHOICE" ? (q.choices || []) : [],
+        correctOption: q.type === "MULTIPLE_CHOICE" ? (q.correctOption || 0) : undefined,
+      }));
+      
       // Create exam via API
       const response = await api.post('/admin/exams', {
         title: examData.title,
         description: examData.description,
-        questions: examData.questions.map(q => ({
-          title: q.title,
-          description: q.description,
-          type: q.type,
-          choices: q.choices || [],
-          correctOption: q.type === "MULTIPLE_CHOICE" ? (q.correctOption || 0) : undefined,
-        })),
+        questions: formattedQuestions,
       });
       
       console.log('Create exam response:', response.data);
       
-      // Reload the exams to get the newly created exam
-      await fetchExams();
+      // Add the newly created exam to our state
+      if (response.data) {
+        const newExam: Exam = {
+          id: response.data.id || response.data._id,
+          title: response.data.title,
+          description: response.data.description,
+          questions: (response.data.questions || []).map((question: any) => ({
+            id: question.id || question._id,
+            title: question.title,
+            description: question.description || "",
+            type: question.type,
+            choices: question.choices || [],
+            correctOption: question.correctOption,
+          })),
+          createdAt: response.data.createdAt,
+        };
+        
+        setExams(prevExams => [...prevExams, newExam]);
+      }
       
       return response.data;
     } catch (error) {
@@ -322,12 +345,52 @@ export function ExamProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateExam = (updatedExam: Exam) => {
-    setExams((prevExams) =>
-      prevExams.map((exam) => 
-        exam.id === updatedExam.id ? updatedExam : exam
-      )
-    );
+  const updateExam = async (updatedExam: Exam) => {
+    setIsLoading(true);
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem("authToken");
+      
+      if (!token) {
+        console.error("No auth token available");
+        throw new Error("Authentication required");
+      }
+      
+      // Set authorization header
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Format questions correctly
+      const formattedQuestions = updatedExam.questions.map(q => ({
+        title: q.title,
+        description: q.description || "",
+        type: q.type,
+        choices: q.type === "MULTIPLE_CHOICE" ? (q.choices || []) : [],
+        correctOption: q.type === "MULTIPLE_CHOICE" ? (q.correctOption || 0) : undefined,
+      }));
+      
+      // Create exam via API
+      const response = await api.put(`/admin/exams/${updatedExam.id}`, {
+        title: updatedExam.title,
+        description: updatedExam.description,
+        questions: formattedQuestions,
+      });
+      
+      console.log('Update exam response:', response.data);
+      
+      // Update the exam in our state
+      setExams(prevExams => 
+        prevExams.map(exam => 
+          exam.id === updatedExam.id ? updatedExam : exam
+        )
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error updating exam:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const deleteExam = (examId: string) => {
@@ -351,9 +414,9 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       // Add question to exam via API
       const response = await api.post(`/admin/exams/${examId}/add-question`, {
         title: question.title,
-        description: question.description,
+        description: question.description || "",
         type: question.type,
-        choices: question.choices || [],
+        choices: question.type === "MULTIPLE_CHOICE" ? (question.choices || []) : [],
         correctOption: question.type === "MULTIPLE_CHOICE" ? (question.correctOption || 0) : undefined,
       });
       
@@ -362,7 +425,11 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       // Update the exam in our state
       const updatedExam = await fetchExamById(examId);
       if (updatedExam) {
-        updateExam(updatedExam);
+        setExams(prevExams => 
+          prevExams.map(exam => 
+            exam.id === examId ? updatedExam : exam
+          )
+        );
       }
       
       return response.data;
@@ -391,9 +458,9 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       // Update question via API
       const response = await api.put(`/admin/exams/${examId}/question/${questionId}`, {
         title: question.title,
-        description: question.description,
+        description: question.description || "",
         type: question.type,
-        choices: question.choices || [],
+        choices: question.type === "MULTIPLE_CHOICE" ? (question.choices || []) : [],
         correctOption: question.type === "MULTIPLE_CHOICE" ? (question.correctOption || 0) : undefined,
       });
       
@@ -402,7 +469,11 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       // Update the exam in our state
       const updatedExam = await fetchExamById(examId);
       if (updatedExam) {
-        updateExam(updatedExam);
+        setExams(prevExams => 
+          prevExams.map(exam => 
+            exam.id === examId ? updatedExam : exam
+          )
+        );
       }
       
       return response.data;
@@ -436,7 +507,11 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       // Update the exam in our state
       const updatedExam = await fetchExamById(examId);
       if (updatedExam) {
-        updateExam(updatedExam);
+        setExams(prevExams => 
+          prevExams.map(exam => 
+            exam.id === examId ? updatedExam : exam
+          )
+        );
       }
       
       return response.data;
