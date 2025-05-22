@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useUsers } from "@/context/UserContext";
@@ -7,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, UserPlus, Save, Trash2, Shield, Edit, Users, ArrowLeft } from "lucide-react";
+import { Search, UserPlus, Save, Trash2, Shield, Edit, Users, ArrowLeft, Building } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
@@ -37,30 +36,31 @@ type OrgAdminFormValues = z.infer<typeof orgAdminFormSchema>;
 
 export default function AdminManagement() {
   const { 
-    admins, 
-    createAdmin, 
-    deleteUser, 
-    loadAdmins, 
-    isLoading, 
-    updateAdmin, 
-    createOrganizationAdmin, 
+    organizations,
+    loadOrganizations,
+    createOrganization,
+    updateOrganization,
+    deleteOrganization,
     loadOrganizationAdmins, 
-    organizationAdmins 
+    createOrganizationAdmin,
+    deleteUser,
+    organizationAdmins,
+    isLoading
   } = useUsers();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [orgAdminDialogOpen, setOrgAdminDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
   const [viewingOrgAdmins, setViewingOrgAdmins] = useState(false);
   const [currentOrganization, setCurrentOrganization] = useState<any>(null);
   const { toast } = useToast();
   
-  // Load admins on component mount
+  // Load organizations on component mount
   useEffect(() => {
-    loadAdmins();
+    loadOrganizations();
   }, []);
   
   // Setup form with react-hook-form and zod validation
@@ -99,21 +99,22 @@ export default function AdminManagement() {
     },
   });
   
-  // Filter admin users based on search query
-  const filteredAdmins = viewingOrgAdmins
+  // Filter organizations based on search query
+  const filteredItems = viewingOrgAdmins
     ? organizationAdmins.filter((admin) => 
-        (admin.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (admin.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         admin.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
          admin.email.toLowerCase().includes(searchQuery.toLowerCase()))
       )
-    : admins.filter((admin) => 
-        (admin.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-         admin.email.toLowerCase().includes(searchQuery.toLowerCase()))
+    : organizations.filter((org) => 
+        (org.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         org.email?.toLowerCase().includes(searchQuery.toLowerCase()))
       );
   
   const handleCreateOrganization = async (data: OrganizationFormValues) => {
     setIsSubmitting(true);
     try {
-      await createAdmin({
+      await createOrganization({
         name: data.name,
         email: data.email,
         address: data.address,
@@ -141,7 +142,7 @@ export default function AdminManagement() {
   };
 
   const handleCreateOrgAdmin = async (data: OrgAdminFormValues) => {
-    if (!selectedOrgId) {
+    if (!currentOrgId) {
       toast({
         title: "No organization selected",
         description: "Please select an organization first.",
@@ -152,7 +153,7 @@ export default function AdminManagement() {
 
     setIsSubmitting(true);
     try {
-      await createOrganizationAdmin(selectedOrgId, {
+      await createOrganizationAdmin(currentOrgId, {
         firstName: data.firstName,
         lastName: data.lastName,
         phone: data.phone,
@@ -169,8 +170,8 @@ export default function AdminManagement() {
       setOrgAdminDialogOpen(false);
       
       // Refresh the organization admins list if we're currently viewing them
-      if (viewingOrgAdmins && selectedOrgId) {
-        await loadOrganizationAdmins(selectedOrgId);
+      if (viewingOrgAdmins && currentOrgId) {
+        await loadOrganizationAdmins(currentOrgId);
       }
     } catch (error) {
       console.error('Error creating organization admin:', error);
@@ -184,30 +185,30 @@ export default function AdminManagement() {
     }
   };
 
-  const openEditDialog = (admin: any) => {
-    setCurrentAdminId(admin.id);
+  const openEditDialog = (org: any) => {
+    setCurrentOrgId(org.id);
     editForm.reset({
-      name: admin.name || "",
-      email: admin.email || "",
-      address: admin.address || "",
-      type: admin.type || "",
-      phone: admin.phone || "",
+      name: org.name || "",
+      email: org.email || "",
+      address: org.address || "",
+      type: org.type || "",
+      phone: org.phone || "",
     });
     setEditDialogOpen(true);
   };
 
   const openOrgAdminDialog = (orgId: string) => {
-    setSelectedOrgId(orgId);
+    setCurrentOrgId(orgId);
     orgAdminForm.reset();
     setOrgAdminDialogOpen(true);
   };
   
-  const handleUpdateAdmin = async (data: OrganizationFormValues) => {
-    if (!currentAdminId) return;
+  const handleUpdateOrganization = async (data: OrganizationFormValues) => {
+    if (!currentOrgId) return;
     
     setIsSubmitting(true);
     try {
-      await updateAdmin(currentAdminId, {
+      await updateOrganization(currentOrgId, {
         name: data.name,
         email: data.email,
         address: data.address,
@@ -222,9 +223,9 @@ export default function AdminManagement() {
       
       editForm.reset();
       setEditDialogOpen(false);
-      setCurrentAdminId(null);
+      setCurrentOrgId(null);
     } catch (error) {
-      console.error('Error updating admin:', error);
+      console.error('Error updating organization:', error);
       toast({
         title: "Failed to update organization",
         description: "There was an error updating the organization. Please try again.",
@@ -235,6 +236,15 @@ export default function AdminManagement() {
     }
   };
   
+  const handleDeleteOrganization = (orgId: string, orgName: string | undefined) => {
+    deleteOrganization(orgId);
+    
+    toast({
+      title: "Organization deleted",
+      description: `${orgName || "Organization"} has been removed.`,
+    });
+  };
+
   const handleDeleteAdmin = (userId: string, userName: string | undefined) => {
     deleteUser(userId);
     
@@ -287,7 +297,7 @@ export default function AdminManagement() {
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>
-                    <Shield className="mr-2 h-4 w-4" />
+                    <Building className="mr-2 h-4 w-4" />
                     Create Organization
                   </Button>
                 </DialogTrigger>
@@ -388,7 +398,7 @@ export default function AdminManagement() {
           )}
         </div>
         
-        {/* Edit Admin Dialog */}
+        {/* Edit Organization Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -398,7 +408,7 @@ export default function AdminManagement() {
               </DialogDescription>
             </DialogHeader>
             <Form {...editForm}>
-              <form onSubmit={editForm.handleSubmit(handleUpdateAdmin)} className="space-y-4 py-2">
+              <form onSubmit={editForm.handleSubmit(handleUpdateOrganization)} className="space-y-4 py-2">
                 <FormField
                   control={editForm.control}
                   name="name"
@@ -609,22 +619,31 @@ export default function AdminManagement() {
                 <div className="flex justify-center items-center p-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
                 </div>
-              ) : filteredAdmins.length > 0 ? (
+              ) : filteredItems.length > 0 ? (
                 <div>
-                  {filteredAdmins.map((admin) => (
-                    <div key={admin.id} className="flex items-center p-4 border-t">
+                  {filteredItems.map((item) => (
+                    <div key={item.id} className="flex items-center p-4 border-t">
                       <div className="flex-1 flex items-center">
-                        <Shield className="h-4 w-4 mr-2 text-secondary" />
-                        <span>{admin.name || `${admin.firstName} ${admin.lastName}`}</span>
+                        {viewingOrgAdmins ? (
+                          <>
+                            <Shield className="h-4 w-4 mr-2 text-secondary" />
+                            <span>{`${item.firstName || ''} ${item.lastName || ''}`}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Building className="h-4 w-4 mr-2 text-primary" />
+                            <span>{item.name}</span>
+                          </>
+                        )}
                       </div>
-                      <div className="flex-1">{admin.email}</div>
+                      <div className="flex-1">{item.email}</div>
                       <div className="w-40 text-right flex justify-end">
                         {!viewingOrgAdmins && (
                           <Button
                             variant="ghost"
                             size="sm"
                             className="text-primary hover:bg-primary/10 hover:text-primary mr-1"
-                            onClick={() => viewOrganizationAdmins(admin)}
+                            onClick={() => viewOrganizationAdmins(item)}
                           >
                             <Users className="h-4 w-4" />
                           </Button>
@@ -633,7 +652,8 @@ export default function AdminManagement() {
                           variant="ghost"
                           size="sm"
                           className="text-primary hover:bg-primary/10 hover:text-primary mr-1"
-                          onClick={() => openEditDialog(admin)}
+                          onClick={() => viewingOrgAdmins ? null : openEditDialog(item)}
+                          disabled={viewingOrgAdmins}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -641,7 +661,10 @@ export default function AdminManagement() {
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => handleDeleteAdmin(admin.id, admin.name || `${admin.firstName} ${admin.lastName}`)}
+                          onClick={() => viewingOrgAdmins 
+                            ? handleDeleteAdmin(item.id, `${item.firstName} ${item.lastName}`)
+                            : handleDeleteOrganization(item.id, item.name)
+                          }
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

@@ -99,15 +99,27 @@ export default function CreateExam() {
     
     try {
       // Format the questions properly
-      const formattedQuestions: Question[] = data.questions.map((q, index) => ({
-        id: currentExam?.questions[index]?.id || `q${index + 1}`,
-        title: q.title,
-        description: q.description || "",
-        type: q.type,
-        choices: q.type === "MULTIPLE_CHOICE" ? q.choices || [] : [],
-        correctOption: q.type === "MULTIPLE_CHOICE" ? q.correctOption || 0 : 0,
-        correctAnswer: q.type === "OPEN_ENDED" ? q.correctAnswer || "" : "",
-      }));
+      const formattedQuestions: Question[] = data.questions.map((q, index) => {
+        const baseQuestion = {
+          id: currentExam?.questions[index]?.id || `q${index + 1}`,
+          title: q.title,
+          description: q.description || "",
+          type: q.type,
+        };
+        
+        if (q.type === "MULTIPLE_CHOICE") {
+          return {
+            ...baseQuestion,
+            choices: q.choices || [],
+            correctOption: q.correctOption || 0,
+          };
+        } else {
+          return {
+            ...baseQuestion,
+            correctAnswer: q.correctAnswer || "",
+          };
+        }
+      });
       
       if (isEditing && currentExam) {
         // Update existing exam

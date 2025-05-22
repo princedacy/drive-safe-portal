@@ -1,8 +1,7 @@
-
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE_URL = "https://dev.backend.ikizamini.hillygeeks.com/api/v1";
+const API_BASE_URL = "https://dev.backend.hillygeeks.com/api/v1";
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -20,6 +19,7 @@ export interface Question {
   type: "MULTIPLE_CHOICE" | "OPEN_ENDED";
   choices?: string[];
   correctOption?: number;
+  correctAnswer?: string;
   image?: string;
 }
 
@@ -225,6 +225,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
             type: question.type,
             choices: question.choices || [],
             correctOption: question.correctOption,
+            correctAnswer: question.correctAnswer,
           })),
           createdAt: exam.createdAt,
         }));
@@ -273,6 +274,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
             type: question.type,
             choices: question.choices || [],
             correctOption: question.correctOption,
+            correctAnswer: question.correctAnswer,
           })),
           createdAt: exam.createdAt,
         };
@@ -329,6 +331,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
             type: question.type,
             choices: question.choices || [],
             correctOption: question.correctOption,
+            correctAnswer: question.correctAnswer,
           })),
           createdAt: response.data.createdAt,
         };
