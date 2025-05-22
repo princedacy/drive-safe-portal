@@ -1,8 +1,10 @@
+
 import { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { API_URL } from "@/config";
 import { UserRole } from "@/types/UserRole";
 
+// Define the User interface
 interface User {
   id: string;
   firstName: string;
@@ -12,6 +14,14 @@ interface User {
   phone: string;
   organizationId: string;
   name?: string;
+}
+
+// Define the Organization interface
+interface Organization {
+  id: string;
+  name: string;
+  location: string;
+  createdAt: string;
 }
 
 interface UserContextType {
@@ -29,13 +39,25 @@ interface UserContextType {
       phone: string;
     }
   ) => Promise<any>;
+  // Add missing organization-related properties
+  organizations: Organization[];
+  loadOrganizations: () => Promise<void>;
+  createOrganization: (organizationData: Partial<Organization>) => Promise<any>;
+  updateOrganization: (id: string, data: Partial<Organization>) => Promise<any>;
+  deleteOrganization: (id: string) => Promise<void>;
+  loadOrganizationAdmins: (organizationId: string) => Promise<void>;
+  organizationAdmins: User[];
+  isLoading: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [users, setUsers] = useState<User[]>([]);
-  const { userToken } = useAuth();
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizationAdmins, setOrganizationAdmins] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { token: userToken } = useAuth();
 
   const fetchUsers = async () => {
     try {
@@ -61,6 +83,124 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       fetchUsers();
     }
   }, [userToken]);
+
+  const loadOrganizations = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/organizations`, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setOrganizations(data);
+    } catch (error) {
+      console.error("Error loading organizations:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createOrganization = async (organizationData: Partial<Organization>) => {
+    try {
+      const response = await fetch(`${API_URL}/organizations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${userToken}`,
+        },
+        body: JSON.stringify(organizationData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create organization");
+      }
+
+      const data = await response.json();
+      // Refresh the organizations list
+      loadOrganizations();
+      return data;
+    } catch (error) {
+      console.error("Error creating organization:", error);
+      throw error;
+    }
+  };
+
+  const updateOrganization = async (id: string, data: Partial<Organization>) => {
+    try {
+      const response = await fetch(`${API_URL}/organizations/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${userToken}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update organization");
+      }
+
+      const responseData = await response.json();
+      // Refresh the organizations list
+      loadOrganizations();
+      return responseData;
+    } catch (error) {
+      console.error("Error updating organization:", error);
+      throw error;
+    }
+  };
+
+  const deleteOrganization = async (id: string) => {
+    try {
+      const response = await fetch(`${API_URL}/organizations/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete organization");
+      }
+
+      // Refresh the organizations list
+      loadOrganizations();
+    } catch (error) {
+      console.error("Error deleting organization:", error);
+      throw error;
+    }
+  };
+
+  const loadOrganizationAdmins = async (organizationId: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/organizations/${organizationId}/users`, {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setOrganizationAdmins(data);
+    } catch (error) {
+      console.error("Error loading organization admins:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const sendInviteEmail = async (email: string, role: UserRole) => {
     try {
@@ -153,6 +293,14 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     sendInviteEmail,
     deleteUser,
     createOrganizationAdmin,
+    organizations,
+    loadOrganizations,
+    createOrganization,
+    updateOrganization,
+    deleteOrganization,
+    loadOrganizationAdmins,
+    organizationAdmins,
+    isLoading,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
