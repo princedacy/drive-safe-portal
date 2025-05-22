@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ADMIN_ROLE, SUPER_ADMIN_ROLE } from "@/types/UserRole";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -27,8 +28,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     navigate("/login");
   };
 
-  const isAdminOrAbove = currentUser?.role === "ADMIN" || currentUser?.role === "SUPER_ADMIN";
-  const isSuperAdmin = currentUser?.role === "SUPER_ADMIN";
+  const isAdminOrAbove = currentUser?.role === ADMIN_ROLE || currentUser?.role === SUPER_ADMIN_ROLE;
+  const isSuperAdmin = currentUser?.role === SUPER_ADMIN_ROLE;
 
   return (
     <div className="min-h-screen flex flex-col">

@@ -1,16 +1,19 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { useRoleNavigation } from "@/hooks/use-role-navigation";
 
 export default function MagicLinkLogin() {
   const [searchParams] = useSearchParams();
   const { magicLinkLogin, isLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { navigateByRole } = useRoleNavigation();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,7 +31,7 @@ export default function MagicLinkLogin() {
           title: "Login successful",
           description: "You have been successfully logged in.",
         });
-        navigate("/my-exams");
+        navigateByRole();
       } catch (err) {
         setError("Login failed. The link may have expired or is invalid.");
         toast({
@@ -40,14 +43,14 @@ export default function MagicLinkLogin() {
     };
 
     loginWithToken();
-  }, [searchParams, magicLinkLogin, navigate, toast]);
+  }, [searchParams, magicLinkLogin, navigateByRole, toast]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">DriveSafe Portal</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">Ikizamini Portal</CardTitle>
             <CardDescription className="text-center">
               Magic Link Login
             </CardDescription>

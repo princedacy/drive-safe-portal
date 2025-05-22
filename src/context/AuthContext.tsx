@@ -1,9 +1,7 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import axios from "axios";
 import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE, UserRole } from "@/types/UserRole";
-
-const API_BASE_URL = "https://dev.backend.ikizamini.hillygeeks.com/api/v1";
+import { API_URL } from "@/config";
 
 export interface User {
   id: string;
@@ -19,6 +17,7 @@ export interface User {
 interface AuthContextType {
   currentUser: User | null;
   isLoading: boolean;
+  isAuthenticated: boolean; // Add this property
   login: (email: string, password: string) => Promise<void>;
   signup: (firstName: string, lastName: string, phone: string, email: string, role: UserRole, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -30,7 +29,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -40,6 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Compute isAuthenticated based on token presence
+  const isAuthenticated = !!token && !!currentUser;
 
   useEffect(() => {
     // Check for saved token and user in localStorage on init
@@ -186,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         currentUser,
         isLoading,
+        isAuthenticated, // Add this property
         login,
         signup,
         logout,

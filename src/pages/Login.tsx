@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE } from "@/types/UserRole";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -15,8 +16,6 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-
-  const from = location.state?.from?.pathname || "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +26,19 @@ export default function Login() {
         title: "Login successful",
         description: "You have successfully logged in.",
       });
-      navigate(from, { replace: true });
+      
+      // Get the user role from the auth context
+      const { currentUser } = useAuth();
+      
+      // Redirect based on user role
+      if (currentUser?.role === USER_ROLE) {
+        navigate("/my-exams", { replace: true });
+      } else if (currentUser?.role === ADMIN_ROLE || currentUser?.role === SUPER_ADMIN_ROLE) {
+        navigate("/dashboard", { replace: true });
+      } else {
+        // Default redirect to dashboard
+        navigate("/dashboard", { replace: true });
+      }
     } catch (error: any) {
       console.error("Login error details:", error);
       toast({

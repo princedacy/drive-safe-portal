@@ -41,10 +41,10 @@ const Landing = () => {
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-10 md:mb-0">
               <h1 className="text-4xl md:text-5xl font-bold text-primary mb-6 leading-tight">
-                The Smart Solution for Driver's License Testing
+                The Smart Solution for Exam Management
               </h1>
               <p className="text-lg text-gray-600 mb-8">
-                Streamline your driving test process with our comprehensive platform designed for testing centers, administrators, and learner drivers.
+                Streamline your examination process with our comprehensive platform designed for educational institutions, organizations, and test-takers.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/login">
@@ -70,14 +70,14 @@ const Landing = () => {
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">Powerful Features</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Everything you need to manage driver testing efficiently and effectively
+              Everything you need to manage examinations efficiently and effectively
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard 
               title="Comprehensive Exam Management" 
-              description="Create, edit, and manage driving exams with ease. Support for multiple question types and automatic grading."
+              description="Create, edit, and manage exams with ease. Support for multiple question types and automatic grading."
               icon="FileQuestion" 
             />
             <FeatureCard 
@@ -92,7 +92,7 @@ const Landing = () => {
             />
             <FeatureCard 
               title="Multi-Organization Support" 
-              description="Perfect for government agencies managing multiple testing centers across different locations."
+              description="Perfect for institutions managing multiple testing centers across different locations."
               icon="Building" 
             />
             <FeatureCard 
@@ -115,7 +115,7 @@ const Landing = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
             <div>
               <div className="text-4xl font-bold mb-2">10,000+</div>
-              <div className="text-lg opacity-80">Tests Administered</div>
+              <div className="text-lg opacity-80">Exams Administered</div>
             </div>
             <div>
               <div className="text-4xl font-bold mb-2">50+</div>
@@ -139,13 +139,13 @@ const Landing = () => {
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">What Our Clients Say</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Trusted by testing centers across Rwanda
+              Trusted by educational institutions across Rwanda
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <TestimonialCard 
-              quote="The Ikizamini Portal has completely transformed how we administer driving tests. The efficiency gains are remarkable."
+              quote="The Ikizamini Portal has completely transformed how we administer exams. The efficiency gains are remarkable."
               author="Jean Mugabo"
               title="Testing Center Director"
             />
@@ -178,7 +178,7 @@ const Landing = () => {
             <div className="border rounded-lg p-8 bg-white shadow-sm hover:shadow-md transition-shadow">
               <div className="text-xl font-bold mb-4">Basic</div>
               <div className="text-4xl font-bold mb-2">$299<span className="text-lg font-normal text-gray-500">/mo</span></div>
-              <div className="text-gray-500 mb-6">For small testing centers</div>
+              <div className="text-gray-500 mb-6">For small institutions</div>
               <ul className="space-y-3 mb-8">
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
@@ -203,7 +203,7 @@ const Landing = () => {
               </div>
               <div className="text-xl font-bold mb-4">Professional</div>
               <div className="text-4xl font-bold mb-2">$599<span className="text-lg font-normal text-gray-500">/mo</span></div>
-              <div className="text-gray-500 mb-6">For medium testing centers</div>
+              <div className="text-gray-500 mb-6">For medium institutions</div>
               <ul className="space-y-3 mb-8">
                 <li className="flex items-start">
                   <Check className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
@@ -261,9 +261,9 @@ const Landing = () => {
       {/* CTA Section */}
       <section className="bg-gradient-to-r from-primary to-accent py-16 text-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Transform Your Testing Process?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Transform Your Exam Process?</h2>
           <p className="text-xl mb-8 max-w-3xl mx-auto opacity-90">
-            Join hundreds of testing centers who trust Ikizamini Portal for their driver license testing needs.
+            Join hundreds of institutions who trust Ikizamini Portal for their examination needs.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button size="lg" variant="secondary" className="px-8">
