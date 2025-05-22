@@ -23,6 +23,7 @@ import AdminManagement from "./pages/AdminManagement";
 import UserExams from "./pages/UserExams";
 import TakeExam from "./pages/TakeExam";
 import NotFound from "./pages/NotFound";
+import Landing from "./pages/Landing";
 
 const queryClient = new QueryClient();
 
@@ -37,12 +38,13 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 {/* Public routes */}
+                <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/magic-login" element={<MagicLinkLogin />} />
                 
                 {/* Protected routes */}
                 <Route 
-                  path="/" 
+                  path="/dashboard" 
                   element={
                     <ProtectedRoute>
                       <Dashboard />
