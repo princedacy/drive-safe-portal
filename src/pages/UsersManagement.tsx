@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useUsers } from "@/context/UserContext";
-import { useAuth, UserRole } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
+import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE, UserRole } from "@/types/UserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,17 +23,17 @@ export default function UsersManagement() {
   const { currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
-  const [newUserRole, setNewUserRole] = useState<UserRole>("USER");
+  const [newUserRole, setNewUserRole] = useState<UserRole>(USER_ROLE);
   const [isInviting, setIsInviting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
   
-  const isSuperAdmin = currentUser?.role === "SUPER_ADMIN";
+  const isSuperAdmin = currentUser?.role === SUPER_ADMIN_ROLE;
   
   // Filter users based on role and search
   const filteredUsers = users.filter((user) => {
     // Superadmins can see everyone, admins only see users
-    if (!isSuperAdmin && user.role !== "USER") {
+    if (!isSuperAdmin && user.role !== USER_ROLE) {
       return false;
     }
     
@@ -143,9 +143,9 @@ export default function UsersManagement() {
                     </SelectTrigger>
                     <SelectContent>
                       {isSuperAdmin && (
-                        <SelectItem value="ADMIN">Admin</SelectItem>
+                        <SelectItem value={ADMIN_ROLE}>Organization Admin</SelectItem>
                       )}
-                      <SelectItem value="USER">User</SelectItem>
+                      <SelectItem value={USER_ROLE}>User</SelectItem>
                     </SelectContent>
                   </Select>
                   {!isSuperAdmin && (

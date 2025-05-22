@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import axios from "axios";
 import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE, UserRole } from "@/types/UserRole";
@@ -269,11 +268,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      // Create organization admin via API
+      // Create organization admin via API with the correct fields
       const response = await api.post(`/super/organizations/${organizationId}/users`, {
-        name: adminData.name,
-        address: adminData.address,
-        type: adminData.type,
+        firstName: adminData.firstName,
+        lastName: adminData.lastName,
         phone: phone,
         email: adminData.email,
         password: adminData.password,

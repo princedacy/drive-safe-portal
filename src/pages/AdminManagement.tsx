@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useUsers } from "@/context/UserContext";
@@ -25,9 +24,8 @@ const organizationFormSchema = z.object({
 
 // Define schema for organization admin creation form
 const orgAdminFormSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  address: z.string().min(5, { message: "Address must be at least 5 characters" }),
-  type: z.string().min(2, { message: "Type must be at least 2 characters" }),
+  firstName: z.string().min(2, { message: "First name must be at least 2 characters" }),
+  lastName: z.string().min(2, { message: "Last name must be at least 2 characters" }),
   phone: z.string().min(10, { message: "Phone must be at least 10 characters" }),
   email: z.string().email({ message: "Please enter a valid email" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
@@ -37,7 +35,17 @@ type OrganizationFormValues = z.infer<typeof organizationFormSchema>;
 type OrgAdminFormValues = z.infer<typeof orgAdminFormSchema>;
 
 export default function AdminManagement() {
-  const { admins, createAdmin, deleteUser, loadAdmins, isLoading, updateAdmin, createOrganizationAdmin, loadOrganizationAdmins, organizationAdmins } = useUsers();
+  const { 
+    admins, 
+    createAdmin, 
+    deleteUser, 
+    loadAdmins, 
+    isLoading, 
+    updateAdmin, 
+    createOrganizationAdmin, 
+    loadOrganizationAdmins, 
+    organizationAdmins 
+  } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -82,9 +90,8 @@ export default function AdminManagement() {
   const orgAdminForm = useForm<OrgAdminFormValues>({
     resolver: zodResolver(orgAdminFormSchema),
     defaultValues: {
-      name: "",
-      address: "",
-      type: "TESTING_CENTER", // Default value
+      firstName: "",
+      lastName: "",
       phone: "",
       email: "",
       password: "",
@@ -145,17 +152,16 @@ export default function AdminManagement() {
     setIsSubmitting(true);
     try {
       await createOrganizationAdmin(selectedOrgId, {
-        name: data.name,
-        email: data.email,
-        address: data.address,
-        type: data.type,
+        firstName: data.firstName,
+        lastName: data.lastName,
         phone: data.phone,
+        email: data.email,
         password: data.password,
       });
       
       toast({
         title: "Organization Admin created",
-        description: `${data.name} has been added as an organization admin.`,
+        description: `${data.firstName} ${data.lastName} has been added as an organization admin.`,
       });
       
       orgAdminForm.reset();
@@ -488,12 +494,12 @@ export default function AdminManagement() {
               <form onSubmit={orgAdminForm.handleSubmit(handleCreateOrgAdmin)} className="space-y-4 py-2">
                 <FormField
                   control={orgAdminForm.control}
-                  name="name"
+                  name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Admin Name</FormLabel>
+                      <FormLabel>First Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter admin name" {...field} />
+                        <Input placeholder="Enter first name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -502,26 +508,12 @@ export default function AdminManagement() {
                 
                 <FormField
                   control={orgAdminForm.control}
-                  name="address"
+                  name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address</FormLabel>
+                      <FormLabel>Last Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={orgAdminForm.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Type</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter admin type" {...field} />
+                        <Input placeholder="Enter last name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

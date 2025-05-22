@@ -8,6 +8,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ExamProvider } from "@/context/ExamContext";
 import { UserProvider } from "@/context/UserContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ADMIN_ROLE, SUPER_ADMIN_ROLE, USER_ROLE } from "@/types/UserRole";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
@@ -62,7 +63,7 @@ const App = () => (
                 <Route 
                   path="/exams" 
                   element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
+                    <ProtectedRoute allowedRoles={[ADMIN_ROLE, SUPER_ADMIN_ROLE]}>
                       <ExamsManagement />
                     </ProtectedRoute>
                   } 
@@ -71,7 +72,7 @@ const App = () => (
                 <Route 
                   path="/exams/create" 
                   element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
+                    <ProtectedRoute allowedRoles={[ADMIN_ROLE, SUPER_ADMIN_ROLE]}>
                       <CreateExam />
                     </ProtectedRoute>
                   } 
@@ -80,7 +81,7 @@ const App = () => (
                 <Route 
                   path="/exams/edit/:examId" 
                   element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
+                    <ProtectedRoute allowedRoles={[ADMIN_ROLE, SUPER_ADMIN_ROLE]}>
                       <CreateExam />
                     </ProtectedRoute>
                   } 
@@ -89,7 +90,7 @@ const App = () => (
                 <Route 
                   path="/exams/assign/:examId" 
                   element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
+                    <ProtectedRoute allowedRoles={[ADMIN_ROLE, SUPER_ADMIN_ROLE]}>
                       <AssignExam />
                     </ProtectedRoute>
                   } 
@@ -98,7 +99,7 @@ const App = () => (
                 <Route 
                   path="/users" 
                   element={
-                    <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
+                    <ProtectedRoute allowedRoles={[ADMIN_ROLE, SUPER_ADMIN_ROLE]}>
                       <UsersManagement />
                     </ProtectedRoute>
                   } 
@@ -108,7 +109,7 @@ const App = () => (
                 <Route 
                   path="/admin-management" 
                   element={
-                    <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                    <ProtectedRoute allowedRoles={[SUPER_ADMIN_ROLE]}>
                       <AdminManagement />
                     </ProtectedRoute>
                   } 
@@ -118,7 +119,7 @@ const App = () => (
                 <Route 
                   path="/my-exams" 
                   element={
-                    <ProtectedRoute allowedRoles={["USER"]}>
+                    <ProtectedRoute allowedRoles={[USER_ROLE]}>
                       <UserExams />
                     </ProtectedRoute>
                   } 
