@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useUsers } from "@/context/UserContext";
@@ -200,9 +201,9 @@ export default function UsersManagement() {
                   <div className="flex-1 truncate">{user.email}</div>
                   <div className="w-24">
                     <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                      user.role === "SUPER_ADMIN" 
+                      user.role === SUPER_ADMIN_ROLE 
                         ? "bg-accent text-accent-foreground" 
-                        : user.role === "ADMIN"
+                        : user.role === ADMIN_ROLE
                         ? "bg-secondary text-secondary-foreground"
                         : "bg-muted text-muted-foreground"
                     }`}>
@@ -215,7 +216,7 @@ export default function UsersManagement() {
                       size="sm"
                       className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                       onClick={() => handleDeleteUser(user.id, user.name || `${user.firstName} ${user.lastName}`)}
-                      disabled={user.id === currentUser?.id || user.role === "SUPER_ADMIN"}
+                      disabled={user.id === currentUser?.id || user.role === SUPER_ADMIN_ROLE}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

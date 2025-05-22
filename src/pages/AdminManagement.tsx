@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useUsers } from "@/context/UserContext";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, UserPlus, Save, Trash2, Shield, Edit, Users } from "lucide-react";
+import { Search, UserPlus, Save, Trash2, Shield, Edit, Users, ArrowLeft } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
@@ -258,6 +259,7 @@ export default function AdminManagement() {
   return (
     <MainLayout>
       <div className="container mx-auto py-6">
+        {/* Header Section */}
         <div className="flex justify-between items-center mb-6">
           {viewingOrgAdmins ? (
             <>
@@ -267,6 +269,7 @@ export default function AdminManagement() {
                   onClick={goBackToOrganizations}
                   className="mr-2"
                 >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
                   Back to Organizations
                 </Button>
                 <h1 className="text-3xl font-bold">
@@ -280,7 +283,7 @@ export default function AdminManagement() {
             </>
           ) : (
             <>
-              <h1 className="text-3xl font-bold">Admin Management</h1>
+              <h1 className="text-3xl font-bold">Organizations Management</h1>
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>
@@ -577,6 +580,7 @@ export default function AdminManagement() {
           </DialogContent>
         </Dialog>
         
+        {/* Search Bar */}
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -589,6 +593,7 @@ export default function AdminManagement() {
           </div>
         </div>
         
+        {/* Organizations/Admins List */}
         <Card>
           <CardContent className="p-0">
             <div className="rounded-md overflow-hidden">
@@ -610,7 +615,7 @@ export default function AdminManagement() {
                     <div key={admin.id} className="flex items-center p-4 border-t">
                       <div className="flex-1 flex items-center">
                         <Shield className="h-4 w-4 mr-2 text-secondary" />
-                        <span>{admin.name || "Unnamed"}</span>
+                        <span>{admin.name || `${admin.firstName} ${admin.lastName}`}</span>
                       </div>
                       <div className="flex-1">{admin.email}</div>
                       <div className="w-40 text-right flex justify-end">
@@ -624,31 +629,19 @@ export default function AdminManagement() {
                             <Users className="h-4 w-4" />
                           </Button>
                         )}
-                        {viewingOrgAdmins && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-primary hover:bg-primary/10 hover:text-primary mr-1"
-                            onClick={() => openEditDialog(admin)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {!viewingOrgAdmins && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-primary hover:bg-primary/10 hover:text-primary mr-1"
-                            onClick={() => openEditDialog(admin)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-primary hover:bg-primary/10 hover:text-primary mr-1"
+                          onClick={() => openEditDialog(admin)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => handleDeleteAdmin(admin.id, admin.name)}
+                          onClick={() => handleDeleteAdmin(admin.id, admin.name || `${admin.firstName} ${admin.lastName}`)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, ArrowLeft, Loader2 } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Loader2, Check } from "lucide-react";
 
 // Schema validation for the question form
 const questionSchema = z.object({
@@ -22,6 +22,8 @@ const questionSchema = z.object({
   description: z.string().optional(),
   type: z.enum(["MULTIPLE_CHOICE", "OPEN_ENDED"]),
   choices: z.array(z.string()).optional(),
+  correctOption: z.number().min(0).optional(),
+  correctAnswer: z.string().optional(),
 });
 
 // Schema validation for the exam form
@@ -60,6 +62,8 @@ export default function CreateExam() {
             description: q.description,
             type: q.type,
             choices: q.choices || [],
+            correctOption: q.correctOption || 0,
+            correctAnswer: q.correctAnswer || "",
           })),
         }
       : {
@@ -73,6 +77,8 @@ export default function CreateExam() {
               description: "",
               type: "MULTIPLE_CHOICE",
               choices: ["", "", "", ""],
+              correctOption: 0,
+              correctAnswer: "",
             },
           ],
         },
@@ -99,7 +105,8 @@ export default function CreateExam() {
         description: q.description || "",
         type: q.type,
         choices: q.type === "MULTIPLE_CHOICE" ? q.choices || [] : [],
-        correctOption: 0, // Default correct option
+        correctOption: q.type === "MULTIPLE_CHOICE" ? q.correctOption || 0 : 0,
+        correctAnswer: q.type === "OPEN_ENDED" ? q.correctAnswer || "" : "",
       }));
       
       if (isEditing && currentExam) {
@@ -153,6 +160,8 @@ export default function CreateExam() {
       description: "",
       type: "MULTIPLE_CHOICE",
       choices: ["", "", "", ""],
+      correctOption: 0,
+      correctAnswer: "",
     });
   };
   
@@ -349,6 +358,38 @@ export default function CreateExam() {
                     {watchQuestionTypes[index]?.type === "MULTIPLE_CHOICE" && (
                       <div className="space-y-4">
                         <FormLabel>Answer Options</FormLabel>
+                        
+                        {/* Correct option selection for multiple choice */}
+                        <FormField
+                          control={form.control}
+                          name={`questions.${index}.correctOption`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Correct Answer</FormLabel>
+                              <FormControl>
+                                <RadioGroup
+                                  onValueChange={(value) => field.onChange(parseInt(value))}
+                                  defaultValue={field.value?.toString()}
+                                  className="space-y-3"
+                                >
+                                  {(watchQuestionTypes[index]?.choices || []).map((_, choiceIndex) => (
+                                    <div key={choiceIndex} className="flex items-center space-x-2">
+                                      <RadioGroupItem value={choiceIndex.toString()} id={`q${index}-option-${choiceIndex}`} />
+                                      <FormLabel htmlFor={`q${index}-option-${choiceIndex}`}>
+                                        Option {choiceIndex + 1}
+                                      </FormLabel>
+                                    </div>
+                                  ))}
+                                </RadioGroup>
+                              </FormControl>
+                              <FormDescription>
+                                Select which option is correct
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
                         {(watchQuestionTypes[index]?.choices || []).map((_, choiceIndex) => (
                           <FormField
                             key={choiceIndex}
@@ -357,6 +398,11 @@ export default function CreateExam() {
                             render={({ field }) => (
                               <FormItem>
                                 <div className="flex items-center space-x-2">
+                                  <div className="w-6">
+                                    {watchQuestionTypes[index]?.correctOption === choiceIndex && (
+                                      <Check className="h-4 w-4 text-green-500" />
+                                    )}
+                                  </div>
                                   <FormControl>
                                     <Input placeholder={`Option ${choiceIndex + 1}`} {...field} />
                                   </FormControl>
@@ -394,6 +440,30 @@ export default function CreateExam() {
                           Add Option
                         </Button>
                       </div>
+                    )}
+                    
+                    {/* Correct answer field for open-ended questions */}
+                    {watchQuestionTypes[index]?.type === "OPEN_ENDED" && (
+                      <FormField
+                        control={form.control}
+                        name={`questions.${index}.correctAnswer`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Correct Answer</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Enter the correct answer for this open-ended question"
+                                {...field}
+                                className="min-h-[80px]"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              This will be used to auto-grade the question
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     )}
                   </CardContent>
                 </Card>
