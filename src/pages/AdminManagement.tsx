@@ -48,7 +48,7 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from "@/components/ui/pagination";
-import { Plus } from "lucide-react";
+import { Plus, Eye } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -68,7 +68,10 @@ export interface User {
 export interface Organization {
   id: string;
   name: string;
-  location: string;
+  address: string;
+  type: string;
+  phone: string;
+  email: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -85,8 +88,17 @@ const organizationSchema = z.object({
   name: z.string().min(2, {
     message: "Organization name must be at least 2 characters.",
   }),
-  location: z.string().min(2, {
-    message: "Location must be at least 2 characters.",
+  address: z.string().min(2, {
+    message: "Address must be at least 2 characters.",
+  }),
+  type: z.enum(["TESTING_CENTER", "SCHOOL", "COMPANY"], {
+    message: "Please select an organization type.",
+  }),
+  phone: z.string().min(10, {
+    message: "Phone number must be at least 10 characters.",
+  }),
+  email: z.string().email({
+    message: "Invalid email address.",
   }),
 });
 
@@ -115,12 +127,13 @@ export default function AdminManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
+  const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const { token } = useAuth();
 
-  // Fetch organizations with pagination
+  // Fetch organizations with pagination using correct endpoint
   const { data: organizationsData, isLoading: isOrganizationsLoading, error: organizationsError } = useQuery({
     queryKey: ['organizations', currentPage, limit],
     queryFn: async () => {
@@ -135,8 +148,30 @@ export default function AdminManagement() {
       });
       return response.data as PaginatedResponse<Organization>;
     },
-    enabled: !!token, // Only run query if token exists
+    enabled: !!token,
   });
+
+  // Fetch single organization when selected
+  const { data: singleOrgData } = useQuery({
+    queryKey: ['single-organization', selectedOrganizationId],
+    queryFn: async () => {
+      if (!selectedOrganizationId || !token) return null;
+      
+      const response = await axios.get(`${API_URL}/super/organizations/${selectedOrganizationId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+      return response.data as Organization;
+    },
+    enabled: !!selectedOrganizationId && !!token,
+  });
+
+  useEffect(() => {
+    if (singleOrgData) {
+      setSelectedOrganization(singleOrgData);
+    }
+  }, [singleOrgData]);
 
   useEffect(() => {
     if (organizationsData && organizationsData.meta) {
@@ -165,7 +200,10 @@ export default function AdminManagement() {
     resolver: zodResolver(organizationSchema),
     defaultValues: {
       name: "",
-      location: "",
+      address: "",
+      type: "TESTING_CENTER",
+      phone: "",
+      email: "",
     },
   });
 
@@ -182,14 +220,14 @@ export default function AdminManagement() {
     },
   });
 
-  // Create organization mutation
+  // Create organization mutation with correct schema
   const createOrganizationMutation = useMutation({
     mutationFn: async (data: z.infer<typeof organizationSchema>) => {
       if (!token) {
         throw new Error("No authentication token found");
       }
       
-      return axios.post(`${API_URL}/organizations`, data, {
+      return axios.post(`${API_URL}/super/organizations`, data, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -267,19 +305,16 @@ export default function AdminManagement() {
     setCurrentPage(page);
   };
 
-  useEffect(() => {
-    // Set the organizationId in the admin form when an organization is selected
-    if (selectedOrganizationId) {
-      adminForm.setValue('organizationId', selectedOrganizationId);
-    }
-  }, [selectedOrganizationId, adminForm]);
+  const handleSelectOrganization = (organizationId: string) => {
+    setSelectedOrganizationId(organizationId);
+    adminForm.setValue('organizationId', organizationId);
+  };
 
   // Generate pagination items
   const renderPaginationItems = () => {
     const items = [];
     const maxPagesToShow = 5;
     
-    // Only proceed if totalPages is valid
     if (!totalPages || totalPages <= 0) {
       return items;
     }
@@ -307,12 +342,10 @@ export default function AdminManagement() {
     return items;
   };
 
-  // Display error states for debugging
   if (organizationsError) {
     console.error("Organizations error:", organizationsError);
   }
 
-  // Calculate actual total pages based on API response
   const actualTotalPages = organizationsData?.meta?.totalPages || 1;
 
   return (
@@ -338,7 +371,8 @@ export default function AdminManagement() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
-                        <TableHead>Location</TableHead>
+                        <TableHead>Address</TableHead>
+                        <TableHead>Type</TableHead>
                         <TableHead className="w-[150px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -347,9 +381,15 @@ export default function AdminManagement() {
                         organizationsData.data.map((organization) => (
                           <TableRow key={organization.id}>
                             <TableCell>{organization.name}</TableCell>
-                            <TableCell>{organization.location}</TableCell>
+                            <TableCell>{organization.address}</TableCell>
+                            <TableCell>{organization.type}</TableCell>
                             <TableCell>
-                              <Button variant="outline" onClick={() => setSelectedOrganizationId(organization.id)}>
+                              <Button 
+                                variant="outline" 
+                                onClick={() => handleSelectOrganization(organization.id)}
+                                className={selectedOrganizationId === organization.id ? "bg-primary text-primary-foreground" : ""}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
                                 Select
                               </Button>
                             </TableCell>
@@ -357,7 +397,7 @@ export default function AdminManagement() {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center">No organizations found</TableCell>
+                          <TableCell colSpan={4} className="text-center">No organizations found</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
@@ -418,12 +458,60 @@ export default function AdminManagement() {
                           />
                           <FormField
                             control={organizationForm.control}
-                            name="location"
+                            name="address"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Location</FormLabel>
+                                <FormLabel>Address</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Organization Location" {...field} />
+                                  <Input placeholder="Organization Address" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={organizationForm.control}
+                            name="type"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Organization Type</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select organization type" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="TESTING_CENTER">Testing Center</SelectItem>
+                                    <SelectItem value="SCHOOL">School</SelectItem>
+                                    <SelectItem value="COMPANY">Company</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={organizationForm.control}
+                            name="phone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Phone</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Phone Number" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={organizationForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Email Address" type="email" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -443,7 +531,12 @@ export default function AdminManagement() {
           <Card className="shadow-md">
             <CardHeader>
               <CardTitle>Admins</CardTitle>
-              <CardDescription>Manage admins within the selected organization.</CardDescription>
+              <CardDescription>
+                {selectedOrganization 
+                  ? `Manage admins for ${selectedOrganization.name}` 
+                  : "Select an organization to view and manage admins."
+                }
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {selectedOrganizationId ? (
@@ -491,7 +584,7 @@ export default function AdminManagement() {
                         <DialogHeader>
                           <DialogTitle>Create Admin</DialogTitle>
                           <DialogDescription>
-                            Add a new admin to the selected organization.
+                            Add a new admin to {selectedOrganization?.name}.
                           </DialogDescription>
                         </DialogHeader>
                         <Form {...adminForm}>
