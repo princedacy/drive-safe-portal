@@ -1,5 +1,4 @@
 
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ADMIN_ROLE, SUPER_ADMIN_ROLE, USER_ROLE } from '@/types/UserRole';

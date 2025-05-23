@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
@@ -60,12 +61,15 @@ export interface User {
 export interface Organization {
   id: string;
   name: string;
-  email?: string;
+  location: string;
 }
 
 const organizationSchema = z.object({
   name: z.string().min(2, {
     message: "Organization name must be at least 2 characters.",
+  }),
+  location: z.string().min(2, {
+    message: "Location must be at least 2 characters.",
   }),
 });
 
@@ -82,6 +86,9 @@ const adminSchema = z.object({
   phone: z.string().min(10, {
     message: "Phone number must be at least 10 characters.",
   }),
+  password: z.string().min(8, {
+    message: "Password must be at least 8 characters.",
+  }),
   organizationId: z.string().uuid({
     message: "Please select an organization.",
   }),
@@ -96,7 +103,11 @@ export default function AdminManagement() {
   const { data: organizations, isLoading: isOrganizationsLoading, error: organizationsError } = useQuery({
     queryKey: ['organizations'],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/organizations`);
+      const response = await axios.get(`${API_URL}/organizations`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
       return response.data as Organization[];
     },
   });
@@ -106,7 +117,11 @@ export default function AdminManagement() {
     queryKey: ['admins', selectedOrganizationId],
     queryFn: async () => {
       if (!selectedOrganizationId) return [];
-      const response = await axios.get(`${API_URL}/admins?organizationId=${selectedOrganizationId}`);
+      const response = await axios.get(`${API_URL}/organizations/${selectedOrganizationId}/users`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
       return response.data as User[];
     },
     enabled: !!selectedOrganizationId,
@@ -117,6 +132,7 @@ export default function AdminManagement() {
     resolver: zodResolver(organizationSchema),
     defaultValues: {
       name: "",
+      location: "",
     },
   });
 
@@ -128,71 +144,88 @@ export default function AdminManagement() {
       lastName: "",
       email: "",
       phone: "",
+      password: "",
       organizationId: "",
     },
   });
 
   // Create organization mutation
-  const createOrganizationMutation = useMutation(
-    async (data: any) => {
-      const { email, ...orgData } = data;
-      return axios.post(`${API_URL}/organizations`, orgData);
+  const createOrganizationMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof organizationSchema>) => {
+      return axios.post(`${API_URL}/organizations`, data, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          "Content-Type": "application/json",
+        }
+      });
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['organizations']);
-        organizationForm.reset();
-        toast({
-          title: "Organization created successfully!",
-        });
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Failed to create organization.",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ['organizations']});
+      organizationForm.reset();
+      toast({
+        title: "Organization created successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to create organization.",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Create admin mutation
-  const createAdminMutation = useMutation(
-    async (data: any) => axios.post(`${API_URL}/auth/signup`, { ...data, role: ADMIN_ROLE }),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['admins', selectedOrganizationId]);
-        adminForm.reset();
-        toast({
-          title: "Admin created successfully!",
-        });
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Failed to create admin.",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    }
-  );
+  const createAdminMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof adminSchema>) => {
+      return axios.post(`${API_URL}/super/organizations/${data.organizationId}/users`, 
+        { ...data, role: ADMIN_ROLE }, 
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            "Content-Type": "application/json",
+          }
+        }
+      );
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({queryKey: ['admins', variables.organizationId]});
+      adminForm.reset();
+      toast({
+        title: "Admin created successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to create admin.",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
-  const createOrganization = async (data: any) => {
+  const createOrganization = async (data: z.infer<typeof organizationSchema>) => {
     try {
-      const { email, ...orgData } = data;
-      createOrganizationMutation.mutate(orgData);
+      createOrganizationMutation.mutate(data);
     } catch (error) {
       console.error(error);
     }
   };
 
-  const createAdmin = async (data: any) => {
+  const createAdmin = async (data: z.infer<typeof adminSchema>) => {
     try {
       createAdminMutation.mutate(data);
     } catch (error) {
       console.error(error);
     }
   };
+
+  useEffect(() => {
+    // Set the organizationId in the admin form when an organization is selected
+    if (selectedOrganizationId) {
+      adminForm.setValue('organizationId', selectedOrganizationId);
+    }
+  }, [selectedOrganizationId, adminForm]);
 
   return (
     <MainLayout>
@@ -210,14 +243,14 @@ export default function AdminManagement() {
               {isOrganizationsLoading ? (
                 <p>Loading organizations...</p>
               ) : organizationsError ? (
-                <p className="text-red-500">Error: {organizationsError.message}</p>
+                <p className="text-red-500">Error: {(organizationsError as Error).message}</p>
               ) : (
                 <div className="space-y-4">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
-                        {/* <TableHead>Email</TableHead> */}
+                        <TableHead>Location</TableHead>
                         <TableHead className="w-[150px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -225,7 +258,7 @@ export default function AdminManagement() {
                       {organizations?.map((organization) => (
                         <TableRow key={organization.id}>
                           <TableCell>{organization.name}</TableCell>
-                          {/* <TableCell>{organization.email}</TableCell> */}
+                          <TableCell>{organization.location}</TableCell>
                           <TableCell>
                             <Button variant="outline" onClick={() => setSelectedOrganizationId(organization.id)}>
                               Select
@@ -265,6 +298,19 @@ export default function AdminManagement() {
                               </FormItem>
                             )}
                           />
+                          <FormField
+                            control={organizationForm.control}
+                            name="location"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Location</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Organization Location" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                           <Button type="submit">Create Organization</Button>
                         </form>
                       </Form>
@@ -286,7 +332,7 @@ export default function AdminManagement() {
                 isAdminLoading ? (
                   <p>Loading admins...</p>
                 ) : adminError ? (
-                  <p className="text-red-500">Error: {adminError.message}</p>
+                  <p className="text-red-500">Error: {(adminError as Error).message}</p>
                 ) : (
                   <div className="space-y-4">
                     <Table>
@@ -380,28 +426,18 @@ export default function AdminManagement() {
                             />
                             <FormField
                               control={adminForm.control}
-                              name="organizationId"
+                              name="password"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Organization</FormLabel>
-                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select an organization" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {organizations?.map((organization) => (
-                                        <SelectItem key={organization.id} value={organization.id}>
-                                          {organization.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                  <FormLabel>Password</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Password" type="password" {...field} />
+                                  </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
+                            <input type="hidden" {...adminForm.register('organizationId')} />
                             <Button type="submit">Create Admin</Button>
                           </form>
                         </Form>
@@ -410,7 +446,7 @@ export default function AdminManagement() {
                   </div>
                 )
               ) : (
-                <p>Select an organization to view admins.</p>
+                <p>Select an organization to view and manage admins.</p>
               )}
             </CardContent>
           </Card>
