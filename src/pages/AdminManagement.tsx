@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
@@ -334,11 +335,11 @@ export default function AdminManagement() {
     console.log('Selecting organization:', organizationId);
     setSelectedOrganizationId(organizationId);
     adminForm.setValue('organizationId', organizationId);
-    
-    // Force refetch of admins for the selected organization
-    setTimeout(() => {
-      refetchAdmins();
-    }, 100);
+  };
+
+  // Helper function to get initials from name
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
   // Generate pagination items
@@ -417,8 +418,8 @@ export default function AdminManagement() {
                             <TableCell>
                               <Button 
                                 variant="outline" 
-                                onClick={() => handleSelectOrganization(organization.id)}
-                                className={selectedOrganizationId === organization.id ? "bg-primary text-primary-foreground" : ""}
+                                onClick={() => handleSelectOrganization(organization.id || organization._id)}
+                                className={selectedOrganizationId === (organization.id || organization._id) ? "bg-primary text-primary-foreground" : ""}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
                                 Select
@@ -672,7 +673,7 @@ export default function AdminManagement() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
+                          <TableHead>Admin</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Phone</TableHead>
                           <TableHead>Role</TableHead>
@@ -682,7 +683,16 @@ export default function AdminManagement() {
                         {admins && admins.length > 0 ? (
                           admins.map((admin) => (
                             <TableRow key={admin.id}>
-                              <TableCell>{admin.firstName} {admin.lastName}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-3">
+                                  <Avatar>
+                                    <AvatarFallback>
+                                      {getInitials(admin.firstName, admin.lastName)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span>{admin.firstName} {admin.lastName}</span>
+                                </div>
+                              </TableCell>
                               <TableCell>{admin.email}</TableCell>
                               <TableCell>{admin.phone}</TableCell>
                               <TableCell>{admin.role}</TableCell>
