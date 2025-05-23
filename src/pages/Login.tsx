@@ -86,10 +86,6 @@ export default function Login() {
                   "Sign In"
                 )}
               </Button>
-              <p className="text-sm text-center text-muted-foreground">
-                For testing use: <br />
-                <code className="text-xs bg-muted p-1 rounded">admin@hillygeeks.com</code> / <code className="text-xs bg-muted p-1 rounded">test12345</code>
-              </p>
             </CardFooter>
           </form>
         </Card>
