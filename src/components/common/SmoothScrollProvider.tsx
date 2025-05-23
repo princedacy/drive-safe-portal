@@ -1,5 +1,5 @@
 
-import { ReactLenis, useLenis } from '@studio-freight/lenis/react'
+import { ReactLenis } from 'lenis/react'
 import { ReactNode } from 'react'
 
 interface SmoothScrollProviderProps {
