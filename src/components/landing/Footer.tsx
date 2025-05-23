@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 
@@ -10,7 +9,7 @@ const Footer = () => {
           <div>
             <h3 className="text-xl font-bold text-white mb-4">Ikizamini</h3>
             <p className="mb-4">
-              The smart solution for driver's license testing centers and government agencies.
+              Create or take tests and exams for your class, interviews, and any other purpose. All in one platform.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="hover:text-white">

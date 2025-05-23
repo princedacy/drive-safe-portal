@@ -13,7 +13,14 @@ const Landing = () => {
       {/* Navigation */}
       <nav className="bg-white py-4 sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 flex justify-between items-center">
-          <div className="text-2xl font-bold" style={{ color: '#b10000' }}>Ikizamini</div>
+          <div className="flex items-center space-x-2">
+            <img 
+              src="/lovable-uploads/a515d767-617a-4d9f-a74b-c729e4032bda.png" 
+              alt="Ikizamini Logo" 
+              className="h-8 w-8"
+            />
+            <div className="text-2xl font-bold" style={{ color: '#b10000' }}>Ikizamini</div>
+          </div>
           <div className="space-x-4 hidden md:flex items-center">
             <a href="#features" className="font-medium text-gray-600 hover:text-primary transition-colors">Features</a>
             <a href="#testimonials" className="font-medium text-gray-600 hover:text-primary transition-colors">Testimonials</a>
