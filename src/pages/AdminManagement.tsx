@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
@@ -179,21 +178,29 @@ export default function AdminManagement() {
     }
   }, [organizationsData]);
 
-  // Fetch admins with updated endpoint
-  const { data: admins, isLoading: isAdminLoading, error: adminError } = useQuery({
+  // Fetch admins with updated endpoint - fix the response handling
+  const { data: adminsResponse, isLoading: isAdminLoading, error: adminError } = useQuery({
     queryKey: ['admins', selectedOrganizationId],
     queryFn: async () => {
-      if (!selectedOrganizationId || !token) return [];
+      if (!selectedOrganizationId || !token) return { data: [] };
       
       const response = await axios.get(`${API_URL}/super/organizations/${selectedOrganizationId}/users?page=0&limit=100`, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
       });
-      return response.data as User[];
+      
+      // Handle both array response and paginated response
+      if (Array.isArray(response.data)) {
+        return { data: response.data };
+      } else {
+        return response.data;
+      }
     },
     enabled: !!selectedOrganizationId && !!token,
   });
+
+  const admins = adminsResponse?.data || [];
 
   // Organization form
   const organizationForm = useForm<z.infer<typeof organizationSchema>>({
@@ -540,12 +547,104 @@ export default function AdminManagement() {
             </CardHeader>
             <CardContent>
               {selectedOrganizationId ? (
-                isAdminLoading ? (
-                  <p>Loading admins...</p>
-                ) : adminError ? (
-                  <p className="text-red-500">Error: {(adminError as Error).message}</p>
-                ) : (
-                  <div className="space-y-4">
+                <div className="space-y-4">
+                  {/* Create Admin Button - Always show when organization is selected */}
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="w-full">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Admin
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Create Admin</DialogTitle>
+                        <DialogDescription>
+                          Add a new admin to {selectedOrganization?.name}.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <Form {...adminForm}>
+                        <form onSubmit={adminForm.handleSubmit(createAdmin)} className="space-y-4">
+                          <FormField
+                            control={adminForm.control}
+                            name="firstName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>First Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="First Name" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={adminForm.control}
+                            name="lastName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Last Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Last Name" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={adminForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Email" type="email" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={adminForm.control}
+                            name="phone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Phone</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Phone" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={adminForm.control}
+                            name="password"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Password" type="password" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <input type="hidden" {...adminForm.register('organizationId')} />
+                          <Button type="submit" disabled={createAdminMutation.isPending}>
+                            {createAdminMutation.isPending ? "Creating..." : "Create Admin"}
+                          </Button>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Admins Table */}
+                  {isAdminLoading ? (
+                    <p>Loading admins...</p>
+                  ) : adminError ? (
+                    <p className="text-red-500">Error: {(adminError as Error).message}</p>
+                  ) : (
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -567,103 +666,15 @@ export default function AdminManagement() {
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={4} className="text-center">No admins found</TableCell>
+                            <TableCell colSpan={4} className="text-center">No admins found for this organization</TableCell>
                           </TableRow>
                         )}
                       </TableBody>
                     </Table>
-
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Create Admin
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                          <DialogTitle>Create Admin</DialogTitle>
-                          <DialogDescription>
-                            Add a new admin to {selectedOrganization?.name}.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <Form {...adminForm}>
-                          <form onSubmit={adminForm.handleSubmit(createAdmin)} className="space-y-4">
-                            <FormField
-                              control={adminForm.control}
-                              name="firstName"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>First Name</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="First Name" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={adminForm.control}
-                              name="lastName"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Last Name</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Last Name" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={adminForm.control}
-                              name="email"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Email</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Email" type="email" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={adminForm.control}
-                              name="phone"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Phone</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Phone" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={adminForm.control}
-                              name="password"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Password</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Password" type="password" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <input type="hidden" {...adminForm.register('organizationId')} />
-                            <Button type="submit">Create Admin</Button>
-                          </form>
-                        </Form>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                )
+                  )}
+                </div>
               ) : (
-                <p>Select an organization to view and manage admins.</p>
+                <p className="text-center text-muted-foreground py-8">Select an organization to view and manage admins.</p>
               )}
             </CardContent>
           </Card>
