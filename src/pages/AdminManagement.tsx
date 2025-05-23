@@ -14,9 +14,7 @@ import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -25,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { API_URL } from "@/config";
+import { useAuth } from "@/context/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -54,7 +53,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { ADMIN_ROLE, SUPER_ADMIN_ROLE } from "@/types/UserRole";
+import { ADMIN_ROLE } from "@/types/UserRole";
 
 // Define the types for the data
 export interface User {
@@ -119,18 +118,24 @@ export default function AdminManagement() {
   const [currentPage, setCurrentPage] = useState(0);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+  const { token } = useAuth();
 
   // Fetch organizations with pagination
   const { data: organizationsData, isLoading: isOrganizationsLoading, error: organizationsError } = useQuery({
     queryKey: ['organizations', currentPage, limit],
     queryFn: async () => {
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+      
       const response = await axios.get(`${API_URL}/super/organizations?page=${currentPage}&limit=${limit}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
         }
       });
       return response.data as PaginatedResponse<Organization>;
     },
+    enabled: !!token, // Only run query if token exists
   });
 
   useEffect(() => {
@@ -143,15 +148,16 @@ export default function AdminManagement() {
   const { data: admins, isLoading: isAdminLoading, error: adminError } = useQuery({
     queryKey: ['admins', selectedOrganizationId],
     queryFn: async () => {
-      if (!selectedOrganizationId) return [];
+      if (!selectedOrganizationId || !token) return [];
+      
       const response = await axios.get(`${API_URL}/organizations/${selectedOrganizationId}/users`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
         }
       });
       return response.data as User[];
     },
-    enabled: !!selectedOrganizationId,
+    enabled: !!selectedOrganizationId && !!token,
   });
 
   // Organization form
@@ -179,9 +185,13 @@ export default function AdminManagement() {
   // Create organization mutation
   const createOrganizationMutation = useMutation({
     mutationFn: async (data: z.infer<typeof organizationSchema>) => {
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+      
       return axios.post(`${API_URL}/organizations`, data, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         }
       });
@@ -194,9 +204,10 @@ export default function AdminManagement() {
       });
     },
     onError: (error: any) => {
+      console.error("Error creating organization:", error);
       toast({
         title: "Failed to create organization.",
-        description: error.message,
+        description: error.response?.data?.message || error.message,
         variant: "destructive",
       });
     },
@@ -205,11 +216,15 @@ export default function AdminManagement() {
   // Create admin mutation
   const createAdminMutation = useMutation({
     mutationFn: async (data: z.infer<typeof adminSchema>) => {
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+      
       return axios.post(`${API_URL}/super/organizations/${data.organizationId}/users`, 
         { ...data, role: ADMIN_ROLE }, 
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           }
         }
@@ -223,9 +238,10 @@ export default function AdminManagement() {
       });
     },
     onError: (error: any) => {
+      console.error("Error creating admin:", error);
       toast({
         title: "Failed to create admin.",
-        description: error.message,
+        description: error.response?.data?.message || error.message,
         variant: "destructive",
       });
     },
@@ -285,6 +301,11 @@ export default function AdminManagement() {
     
     return items;
   };
+
+  // Display error states for debugging
+  if (organizationsError) {
+    console.error("Organizations error:", organizationsError);
+  }
 
   return (
     <MainLayout>

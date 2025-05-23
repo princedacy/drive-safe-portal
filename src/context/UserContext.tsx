@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { API_URL } from "@/config";
 import { UserRole } from "@/types/UserRole";
@@ -60,8 +60,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const { token: userToken } = useAuth();
 
   const fetchUsers = async () => {
+    if (!userToken) {
+      console.log("No auth token available, skipping user fetch");
+      return;
+    }
+    
     try {
-      const response = await fetch(`${API_URL}/users`, {
+      const response = await fetch(`${API_URL}/super/users`, {
         headers: {
           Authorization: `Bearer ${userToken}`,
         },
@@ -78,16 +83,15 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  useEffect(() => {
-    if (userToken) {
-      fetchUsers();
-    }
-  }, [userToken]);
-
   const loadOrganizations = async () => {
+    if (!userToken) {
+      console.log("No auth token available, skipping organizations fetch");
+      return;
+    }
+    
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/organizations`, {
+      const response = await fetch(`${API_URL}/super/organizations`, {
         headers: {
           Authorization: `Bearer ${userToken}`,
         },
@@ -181,6 +185,11 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const loadOrganizationAdmins = async (organizationId: string) => {
+    if (!userToken) {
+      console.log("No auth token available, skipping admins fetch");
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/organizations/${organizationId}/users`, {
@@ -203,6 +212,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const sendInviteEmail = async (email: string, role: UserRole) => {
+    if (!userToken) {
+      throw new Error("No authentication token found");
+    }
+    
     try {
       const response = await fetch(`${API_URL}/super/invite`, {
         method: "POST",
@@ -228,6 +241,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const deleteUser = async (userId: string) => {
+    if (!userToken) {
+      throw new Error("No authentication token found");
+    }
+    
     try {
       const response = await fetch(`${API_URL}/super/users/${userId}`, {
         method: "DELETE",
@@ -260,6 +277,10 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
       phone: string;
     }
   ) => {
+    if (!userToken) {
+      throw new Error("No authentication token found");
+    }
+    
     try {
       const response = await fetch(`${API_URL}/super/organizations/${organizationId}/users`, {
         method: "POST",

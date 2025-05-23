@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useUsers } from "@/context/UserContext";
 import { useAuth } from "@/context/AuthContext";
@@ -18,8 +18,8 @@ import {
 import { Label } from "@/components/ui/label";
 
 export default function UsersManagement() {
-  const { users, sendInviteEmail, deleteUser } = useUsers();
-  const { currentUser } = useAuth();
+  const { users, fetchUsers, sendInviteEmail, deleteUser } = useUsers();
+  const { currentUser, token } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserRole, setNewUserRole] = useState<UserRole>(USER_ROLE);
@@ -28,6 +28,13 @@ export default function UsersManagement() {
   const { toast } = useToast();
   
   const isSuperAdmin = currentUser?.role === SUPER_ADMIN_ROLE;
+  
+  // Fetch users on component mount if token exists
+  useEffect(() => {
+    if (token) {
+      fetchUsers();
+    }
+  }, [token, fetchUsers]);
   
   // Filter users based on role and search
   const filteredUsers = users.filter((user) => {
