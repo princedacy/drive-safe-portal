@@ -66,7 +66,8 @@ export interface User {
 }
 
 export interface Organization {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
   address: string;
   type: string;
@@ -265,7 +266,7 @@ export default function AdminManagement() {
     },
   });
 
-  // Create admin mutation
+  // Create admin mutation - fix the endpoint and data structure
   const createAdminMutation = useMutation({
     mutationFn: async (data: z.infer<typeof adminSchema>) => {
       if (!token) {
@@ -282,6 +283,8 @@ export default function AdminManagement() {
       };
       
       console.log('Creating admin with data:', adminData);
+      console.log('Organization ID:', data.organizationId);
+      
       return axios.post(`${API_URL}/super/organizations/${data.organizationId}/users`, 
         adminData, 
         {
@@ -410,23 +413,26 @@ export default function AdminManagement() {
                     </TableHeader>
                     <TableBody>
                       {organizationsData?.data && organizationsData.data.length > 0 ? (
-                        organizationsData.data.map((organization) => (
-                          <TableRow key={organization.id}>
-                            <TableCell>{organization.name}</TableCell>
-                            <TableCell>{organization.address}</TableCell>
-                            <TableCell>{organization.type}</TableCell>
-                            <TableCell>
-                              <Button 
-                                variant="outline" 
-                                onClick={() => handleSelectOrganization(organization.id || organization._id)}
-                                className={selectedOrganizationId === (organization.id || organization._id) ? "bg-primary text-primary-foreground" : ""}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                Select
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
+                        organizationsData.data.map((organization) => {
+                          const orgId = organization.id || organization._id;
+                          return (
+                            <TableRow key={orgId}>
+                              <TableCell>{organization.name}</TableCell>
+                              <TableCell>{organization.address}</TableCell>
+                              <TableCell>{organization.type}</TableCell>
+                              <TableCell>
+                                <Button 
+                                  variant="outline" 
+                                  onClick={() => handleSelectOrganization(orgId)}
+                                  className={selectedOrganizationId === orgId ? "bg-primary text-primary-foreground" : ""}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Select
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
                       ) : (
                         <TableRow>
                           <TableCell colSpan={4} className="text-center">No organizations found</TableCell>
@@ -682,7 +688,7 @@ export default function AdminManagement() {
                       <TableBody>
                         {admins && admins.length > 0 ? (
                           admins.map((admin) => (
-                            <TableRow key={admin.id}>
+                            <TableRow key={admin.id || admin._id}>
                               <TableCell>
                                 <div className="flex items-center space-x-3">
                                   <Avatar>
