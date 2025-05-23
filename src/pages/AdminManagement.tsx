@@ -140,11 +140,13 @@ export default function AdminManagement() {
         throw new Error("No authentication token found");
       }
       
+      console.log('Fetching organizations...');
       const response = await axios.get(`${API_URL}/super/organizations?page=${currentPage}&limit=${limit}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
       });
+      console.log('Organizations response:', response.data);
       return response.data as PaginatedResponse<Organization>;
     },
     enabled: !!token,
@@ -156,11 +158,13 @@ export default function AdminManagement() {
     queryFn: async () => {
       if (!selectedOrganizationId || !token) return null;
       
+      console.log('Fetching single organization:', selectedOrganizationId);
       const response = await axios.get(`${API_URL}/super/organizations/${selectedOrganizationId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
       });
+      console.log('Single organization response:', response.data);
       return response.data as Organization;
     },
     enabled: !!selectedOrganizationId && !!token,
@@ -179,17 +183,19 @@ export default function AdminManagement() {
   }, [organizationsData]);
 
   // Fetch admins with updated endpoint - fix the response handling
-  const { data: adminsResponse, isLoading: isAdminLoading, error: adminError } = useQuery({
+  const { data: adminsResponse, isLoading: isAdminLoading, error: adminError, refetch: refetchAdmins } = useQuery({
     queryKey: ['admins', selectedOrganizationId],
     queryFn: async () => {
       if (!selectedOrganizationId || !token) return { data: [] };
       
+      console.log('Fetching admins for organization:', selectedOrganizationId);
       const response = await axios.get(`${API_URL}/super/organizations/${selectedOrganizationId}/users?page=0&limit=100`, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
       });
       
+      console.log('Admins response:', response.data);
       // Handle both array response and paginated response
       if (Array.isArray(response.data)) {
         return { data: response.data };
@@ -265,8 +271,18 @@ export default function AdminManagement() {
         throw new Error("No authentication token found");
       }
       
+      const adminData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+        role: ADMIN_ROLE
+      };
+      
+      console.log('Creating admin with data:', adminData);
       return axios.post(`${API_URL}/super/organizations/${data.organizationId}/users`, 
-        { ...data, role: ADMIN_ROLE }, 
+        adminData, 
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -281,6 +297,8 @@ export default function AdminManagement() {
       toast({
         title: "Admin created successfully!",
       });
+      // Refetch admins to immediately show the new admin
+      refetchAdmins();
     },
     onError: (error: any) => {
       console.error("Error creating admin:", error);
@@ -313,8 +331,14 @@ export default function AdminManagement() {
   };
 
   const handleSelectOrganization = (organizationId: string) => {
+    console.log('Selecting organization:', organizationId);
     setSelectedOrganizationId(organizationId);
     adminForm.setValue('organizationId', organizationId);
+    
+    // Force refetch of admins for the selected organization
+    setTimeout(() => {
+      refetchAdmins();
+    }, 100);
   };
 
   // Generate pagination items
