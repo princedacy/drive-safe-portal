@@ -139,7 +139,7 @@ export default function AdminManagement() {
   });
 
   useEffect(() => {
-    if (organizationsData) {
+    if (organizationsData && organizationsData.meta) {
       setTotalPages(organizationsData.meta.totalPages);
     }
   }, [organizationsData]);
@@ -279,6 +279,11 @@ export default function AdminManagement() {
     const items = [];
     const maxPagesToShow = 5;
     
+    // Only proceed if totalPages is valid
+    if (!totalPages || totalPages <= 0) {
+      return items;
+    }
+    
     let startPage = Math.max(0, currentPage - Math.floor(maxPagesToShow / 2));
     let endPage = Math.min(totalPages - 1, startPage + maxPagesToShow - 1);
     
@@ -306,6 +311,9 @@ export default function AdminManagement() {
   if (organizationsError) {
     console.error("Organizations error:", organizationsError);
   }
+
+  // Calculate actual total pages based on API response
+  const actualTotalPages = organizationsData?.meta?.totalPages || 1;
 
   return (
     <MainLayout>
@@ -335,21 +343,27 @@ export default function AdminManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {organizationsData?.data.map((organization) => (
-                        <TableRow key={organization.id}>
-                          <TableCell>{organization.name}</TableCell>
-                          <TableCell>{organization.location}</TableCell>
-                          <TableCell>
-                            <Button variant="outline" onClick={() => setSelectedOrganizationId(organization.id)}>
-                              Select
-                            </Button>
-                          </TableCell>
+                      {organizationsData?.data && organizationsData.data.length > 0 ? (
+                        organizationsData.data.map((organization) => (
+                          <TableRow key={organization.id}>
+                            <TableCell>{organization.name}</TableCell>
+                            <TableCell>{organization.location}</TableCell>
+                            <TableCell>
+                              <Button variant="outline" onClick={() => setSelectedOrganizationId(organization.id)}>
+                                Select
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center">No organizations found</TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
 
-                  {totalPages > 1 && (
+                  {actualTotalPages > 1 && (
                     <Pagination className="mt-4">
                       <PaginationContent>
                         <PaginationItem>
@@ -364,9 +378,9 @@ export default function AdminManagement() {
                         
                         <PaginationItem>
                           <PaginationNext 
-                            onClick={() => handlePageChange(Math.min(totalPages - 1, currentPage + 1))}
-                            aria-disabled={currentPage === totalPages - 1}
-                            className={currentPage === totalPages - 1 ? "pointer-events-none opacity-50" : ""}
+                            onClick={() => handlePageChange(Math.min(actualTotalPages - 1, currentPage + 1))}
+                            aria-disabled={currentPage === actualTotalPages - 1}
+                            className={currentPage === actualTotalPages - 1 ? "pointer-events-none opacity-50" : ""}
                           />
                         </PaginationItem>
                       </PaginationContent>
@@ -449,14 +463,20 @@ export default function AdminManagement() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {admins?.map((admin) => (
-                          <TableRow key={admin.id}>
-                            <TableCell>{admin.firstName} {admin.lastName}</TableCell>
-                            <TableCell>{admin.email}</TableCell>
-                            <TableCell>{admin.phone}</TableCell>
-                            <TableCell>{admin.role}</TableCell>
+                        {admins && admins.length > 0 ? (
+                          admins.map((admin) => (
+                            <TableRow key={admin.id}>
+                              <TableCell>{admin.firstName} {admin.lastName}</TableCell>
+                              <TableCell>{admin.email}</TableCell>
+                              <TableCell>{admin.phone}</TableCell>
+                              <TableCell>{admin.role}</TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center">No admins found</TableCell>
                           </TableRow>
-                        ))}
+                        )}
                       </TableBody>
                     </Table>
 
