@@ -41,6 +41,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from "@/components/ui/pagination";
 import { Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
@@ -62,6 +70,16 @@ export interface Organization {
   id: string;
   name: string;
   location: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 const organizationSchema = z.object({
@@ -98,19 +116,28 @@ export default function AdminManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [limit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // Fetch organizations
-  const { data: organizations, isLoading: isOrganizationsLoading, error: organizationsError } = useQuery({
-    queryKey: ['organizations'],
+  // Fetch organizations with pagination
+  const { data: organizationsData, isLoading: isOrganizationsLoading, error: organizationsError } = useQuery({
+    queryKey: ['organizations', currentPage, limit],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/organizations`, {
+      const response = await axios.get(`${API_URL}/super/organizations?page=${currentPage}&limit=${limit}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         }
       });
-      return response.data as Organization[];
+      return response.data as PaginatedResponse<Organization>;
     },
   });
+
+  useEffect(() => {
+    if (organizationsData) {
+      setTotalPages(organizationsData.meta.totalPages);
+    }
+  }, [organizationsData]);
 
   // Fetch admins
   const { data: admins, isLoading: isAdminLoading, error: adminError } = useQuery({
@@ -220,12 +247,44 @@ export default function AdminManagement() {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   useEffect(() => {
     // Set the organizationId in the admin form when an organization is selected
     if (selectedOrganizationId) {
       adminForm.setValue('organizationId', selectedOrganizationId);
     }
   }, [selectedOrganizationId, adminForm]);
+
+  // Generate pagination items
+  const renderPaginationItems = () => {
+    const items = [];
+    const maxPagesToShow = 5;
+    
+    let startPage = Math.max(0, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages - 1, startPage + maxPagesToShow - 1);
+    
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(0, endPage - maxPagesToShow + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink 
+            isActive={currentPage === i} 
+            onClick={() => handlePageChange(i)}
+          >
+            {i + 1}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    
+    return items;
+  };
 
   return (
     <MainLayout>
@@ -255,7 +314,7 @@ export default function AdminManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {organizations?.map((organization) => (
+                      {organizationsData?.data.map((organization) => (
                         <TableRow key={organization.id}>
                           <TableCell>{organization.name}</TableCell>
                           <TableCell>{organization.location}</TableCell>
@@ -268,6 +327,30 @@ export default function AdminManagement() {
                       ))}
                     </TableBody>
                   </Table>
+
+                  {totalPages > 1 && (
+                    <Pagination className="mt-4">
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => handlePageChange(Math.max(0, currentPage - 1))}
+                            aria-disabled={currentPage === 0}
+                            className={currentPage === 0 ? "pointer-events-none opacity-50" : ""}
+                          />
+                        </PaginationItem>
+                        
+                        {renderPaginationItems()}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => handlePageChange(Math.min(totalPages - 1, currentPage + 1))}
+                            aria-disabled={currentPage === totalPages - 1}
+                            className={currentPage === totalPages - 1 ? "pointer-events-none opacity-50" : ""}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
 
                   <Dialog>
                     <DialogTrigger asChild>
