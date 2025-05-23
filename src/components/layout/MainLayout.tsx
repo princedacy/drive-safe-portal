@@ -58,7 +58,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               />
             </svg>
           </Button>
-          <h1 className="text-xl font-bold">Ikizamini Portal</h1>
+          <h1 className="text-xl font-bold">Ikizamini</h1>
         </div>
         
         {currentUser && (

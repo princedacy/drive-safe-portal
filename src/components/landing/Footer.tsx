@@ -8,7 +8,7 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-xl font-bold text-white mb-4">Ikizamini Portal</h3>
+            <h3 className="text-xl font-bold text-white mb-4">Ikizamini</h3>
             <p className="mb-4">
               The smart solution for driver's license testing centers and government agencies.
             </p>
@@ -66,7 +66,7 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p>© 2025 Ikizamini Portal. All rights reserved.</p>
+          <p>© 2025 Ikizamini. All rights reserved.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <a href="#" className="hover:text-white">Privacy Policy</a>
             <a href="#" className="hover:text-white">Terms of Service</a>

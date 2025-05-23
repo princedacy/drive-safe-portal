@@ -14,7 +14,7 @@ const Landing = () => {
       {/* Navigation */}
       <nav className="bg-white py-4 sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 flex justify-between items-center">
-          <div className="text-2xl font-bold text-primary">Ikizamini Portal</div>
+          <div className="text-2xl font-bold text-primary">Ikizamini</div>
           <div className="space-x-4 hidden md:flex items-center">
             <a href="#features" className="font-medium text-gray-600 hover:text-primary transition-colors">Features</a>
             <a href="#testimonials" className="font-medium text-gray-600 hover:text-primary transition-colors">Testimonials</a>
@@ -145,7 +145,7 @@ const Landing = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <TestimonialCard 
-              quote="The Ikizamini Portal has completely transformed how we administer exams. The efficiency gains are remarkable."
+              quote="The Ikizamini has completely transformed how we administer exams. The efficiency gains are remarkable."
               author="Jean Mugabo"
               title="Testing Center Director"
             />
@@ -263,7 +263,7 @@ const Landing = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Transform Your Exam Process?</h2>
           <p className="text-xl mb-8 max-w-3xl mx-auto opacity-90">
-            Join hundreds of institutions who trust Ikizamini Portal for their examination needs.
+            Join hundreds of institutions who trust Ikizamini for their examination needs.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button size="lg" variant="secondary" className="px-8">
