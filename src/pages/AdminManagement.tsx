@@ -144,13 +144,13 @@ export default function AdminManagement() {
     }
   }, [organizationsData]);
 
-  // Fetch admins
+  // Fetch admins with updated endpoint
   const { data: admins, isLoading: isAdminLoading, error: adminError } = useQuery({
     queryKey: ['admins', selectedOrganizationId],
     queryFn: async () => {
       if (!selectedOrganizationId || !token) return [];
       
-      const response = await axios.get(`${API_URL}/organizations/${selectedOrganizationId}/users`, {
+      const response = await axios.get(`${API_URL}/super/organizations/${selectedOrganizationId}/users?page=0&limit=100`, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
