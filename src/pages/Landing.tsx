@@ -41,20 +41,22 @@ const Landing = () => {
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 mb-10 md:mb-0">
               <h1 className="text-4xl md:text-5xl font-bold text-primary mb-6 leading-tight">
-                The Smart Solution for Exam Management
+                Create or Take an Exam from Anywhere!
               </h1>
               <p className="text-lg text-gray-600 mb-8">
-                Streamline your examination process with our comprehensive platform designed for educational institutions, organizations, and test-takers.
+                Prepare and take tests or exams for your class, interviews, and any other purpose. All in one platform.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/login">
                   <Button size="lg" className="px-8">
-                    Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                    Create Exam <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Button variant="outline" size="lg">
-                  Learn More
-                </Button>
+                <Link to="/login">
+                  <Button variant="outline" size="lg" className="px-8">
+                    Take an Exam
+                  </Button>
+                </Link>
               </div>
             </div>
             <div className="md:w-1/2">
