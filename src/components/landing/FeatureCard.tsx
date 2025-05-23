@@ -2,7 +2,7 @@
 import React from "react";
 import { 
   FileQuestion, LayoutDashboard, BarChart, 
-  Building, Lock, Smartphone, LucideIcon 
+  Building, Lock, Smartphone, FileText, Video, ChartBar
 } from "lucide-react";
 
 interface FeatureCardProps {
@@ -28,6 +28,12 @@ const FeatureCard = ({ title, description, icon }: FeatureCardProps) => {
         return <Lock {...iconProps} />;
       case "Smartphone":
         return <Smartphone {...iconProps} />;
+      case "FileText":
+        return <FileText {...iconProps} />;
+      case "Video":
+        return <Video {...iconProps} />;
+      case "ChartBar":
+        return <ChartBar {...iconProps} />;
       default:
         return <FileQuestion {...iconProps} />;
     }

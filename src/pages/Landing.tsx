@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ const Landing = () => {
       {/* Navigation */}
       <nav className="bg-white py-4 sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 flex justify-between items-center">
-          <div className="text-2xl font-bold text-primary">Ikizamini</div>
+          <div className="text-2xl font-bold" style={{ color: '#b10000' }}>Ikizamini</div>
           <div className="space-x-4 hidden md:flex items-center">
             <a href="#features" className="font-medium text-gray-600 hover:text-primary transition-colors">Features</a>
             <a href="#testimonials" className="font-medium text-gray-600 hover:text-primary transition-colors">Testimonials</a>
@@ -78,19 +77,19 @@ const Landing = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard 
-              title="Comprehensive Exam Management" 
-              description="Create, edit, and manage exams with ease. Support for multiple question types and automatic grading."
-              icon="FileQuestion" 
+              title="Create an exam for any purpose" 
+              description="Set questions of different formats such as MCQs, Open-ended, video, and others"
+              icon="FileText" 
             />
             <FeatureCard 
-              title="User-Friendly Interface" 
-              description="Intuitive design for admins and test-takers alike, ensuring a smooth testing experience for everyone."
-              icon="LayoutDashboard" 
+              title="Take an exam completely remotely" 
+              description="Using AI, we provide an environment for your students or employees, or candidates to take exam under supervision"
+              icon="Video" 
             />
             <FeatureCard 
-              title="Detailed Analytics" 
-              description="Get insights into test performance, pass rates, and more with comprehensive reporting tools."
-              icon="BarChart" 
+              title="Progress tracking" 
+              description="Monitor your exams and candidates in an intuitive dashboard"
+              icon="ChartBar" 
             />
             <FeatureCard 
               title="Multi-Organization Support" 
