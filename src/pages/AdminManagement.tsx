@@ -338,6 +338,7 @@ export default function AdminManagement() {
     console.log('Selecting organization:', organizationId);
     setSelectedOrganizationId(organizationId);
     adminForm.setValue('organizationId', organizationId);
+    console.log('Set organizationId in form:', organizationId);
   };
 
   // Helper function to get initials from name
