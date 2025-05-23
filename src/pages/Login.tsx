@@ -1,21 +1,20 @@
 
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { USER_ROLE, ADMIN_ROLE, SUPER_ADMIN_ROLE } from "@/types/UserRole";
+import { useRoleNavigation } from "@/hooks/use-role-navigation";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login, isLoading } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
+  const { navigateByRole } = useRoleNavigation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,18 +26,8 @@ export default function Login() {
         description: "You have successfully logged in.",
       });
       
-      // Get the user role from the auth context
-      const { currentUser } = useAuth();
-      
-      // Redirect based on user role
-      if (currentUser?.role === USER_ROLE) {
-        navigate("/my-exams", { replace: true });
-      } else if (currentUser?.role === ADMIN_ROLE || currentUser?.role === SUPER_ADMIN_ROLE) {
-        navigate("/dashboard", { replace: true });
-      } else {
-        // Default redirect to dashboard
-        navigate("/dashboard", { replace: true });
-      }
+      // Use the role navigation hook to redirect based on user role
+      navigateByRole();
     } catch (error: any) {
       console.error("Login error details:", error);
       toast({
