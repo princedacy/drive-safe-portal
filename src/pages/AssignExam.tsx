@@ -3,69 +3,101 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useParams, useNavigate } from "react-router-dom";
 import { useExams } from "@/context/ExamContext";
-import { useUsers } from "@/context/UserContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Search, ArrowLeft, Check } from "lucide-react";
-import { USER_ROLE } from "@/types/UserRole";
+import { ArrowLeft, Plus, Trash2, Mail, Loader2 } from "lucide-react";
+
+interface Candidate {
+  _id: string;
+  email: string;
+  name?: string;
+  status?: string;
+}
 
 export default function AssignExam() {
   const { examId } = useParams<{ examId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { exams, assignExamToUser } = useExams();
-  const { users } = useUsers();
+  const { exams, addExamCandidate, fetchExamCandidates, isLoading } = useExams();
   
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [email, setEmail] = useState("");
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [isLoadingCandidates, setIsLoadingCandidates] = useState(true);
+  const [isAddingCandidate, setIsAddingCandidate] = useState(false);
   
   // Get the specific exam
   const exam = exams.find((e) => e.id === examId);
   
-  // Filter for regular users only and apply search
-  const filteredUsers = users.filter((user) => 
-    user.role === USER_ROLE &&
-    (user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     user.email.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Load existing candidates
+  useEffect(() => {
+    const loadCandidates = async () => {
+      if (!examId) return;
+      
+      setIsLoadingCandidates(true);
+      try {
+        const response = await fetchExamCandidates(examId);
+        setCandidates(response || []);
+      } catch (error) {
+        console.error('Error loading candidates:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load exam candidates",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingCandidates(false);
+      }
+    };
+
+    loadCandidates();
+  }, [examId, fetchExamCandidates, toast]);
   
-  // Handle select/deselect all
-  const handleSelectAll = () => {
-    if (selectedUsers.length === filteredUsers.length) {
-      setSelectedUsers([]);
-    } else {
-      setSelectedUsers(filteredUsers.map(user => user.id));
+  // Handle adding candidate by email
+  const handleAddCandidate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!examId || !email.trim()) return;
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
     }
-  };
-  
-  // Handle individual select/deselect
-  const handleSelectUser = (userId: string) => {
-    if (selectedUsers.includes(userId)) {
-      setSelectedUsers(selectedUsers.filter(id => id !== userId));
-    } else {
-      setSelectedUsers([...selectedUsers, userId]);
+    
+    setIsAddingCandidate(true);
+    try {
+      await addExamCandidate(examId, email.trim());
+      
+      toast({
+        title: "Candidate Added",
+        description: `Successfully added ${email} to the exam`,
+      });
+      
+      // Clear the email input
+      setEmail("");
+      
+      // Reload candidates list
+      const response = await fetchExamCandidates(examId);
+      setCandidates(response || []);
+      
+    } catch (error: any) {
+      console.error('Error adding candidate:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to add candidate",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingCandidate(false);
     }
-  };
-  
-  // Handle assign exams to selected users
-  const handleAssignExam = () => {
-    if (!examId || selectedUsers.length === 0) return;
-    
-    // Assign exam to each selected user
-    selectedUsers.forEach(userId => {
-      assignExamToUser(examId, userId);
-    });
-    
-    toast({
-      title: "Exam assigned",
-      description: `Assigned to ${selectedUsers.length} user${selectedUsers.length > 1 ? 's' : ''}`,
-    });
-    
-    // Clear selection
-    setSelectedUsers([]);
   };
   
   if (!exam) {
@@ -94,19 +126,11 @@ export default function AssignExam() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Exams
           </Button>
-          
-          <Button 
-            onClick={handleAssignExam}
-            disabled={selectedUsers.length === 0}
-          >
-            <Check className="mr-2 h-4 w-4" />
-            Assign to {selectedUsers.length} User{selectedUsers.length !== 1 ? 's' : ''}
-          </Button>
         </div>
         
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Assign {exam.title}</CardTitle>
+            <CardTitle>Assign Candidates to: {exam.title}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="mb-4">{exam.description}</p>
@@ -128,74 +152,96 @@ export default function AssignExam() {
           </CardContent>
         </Card>
         
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-4">Select Users</h2>
-          
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input 
-              placeholder="Search users..." 
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
-          <Card>
-            <CardContent className="p-0">
-              <div className="rounded-md border border-input">
-                <div className="flex items-center p-4 bg-muted border-b">
-                  <div className="flex items-center flex-1">
-                    <Checkbox 
-                      id="select-all"
-                      checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-                      onCheckedChange={handleSelectAll}
-                      className="mr-3"
-                    />
-                    <label htmlFor="select-all" className="text-sm font-medium">
-                      Select All Users
-                    </label>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {selectedUsers.length} of {filteredUsers.length} selected
-                  </div>
-                </div>
-                
-                {filteredUsers.length > 0 ? (
-                  <div className="max-h-[400px] overflow-y-auto">
-                    {filteredUsers.map((user) => (
-                      <div key={user.id} className="flex items-center p-4 border-b">
-                        <Checkbox 
-                          id={`user-${user.id}`}
-                          checked={selectedUsers.includes(user.id)}
-                          onCheckedChange={() => handleSelectUser(user.id)}
-                          className="mr-3"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <label 
-                            htmlFor={`user-${user.id}`} 
-                            className="font-medium cursor-pointer"
-                          >
-                            {user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unnamed User'}
-                          </label>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {user.email}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-6 text-center">
-                    <p className="text-muted-foreground">
-                      {searchQuery ? 'No users match your search' : 'No users found'}
-                    </p>
-                  </div>
-                )}
+        {/* Add Candidate Form */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Mail className="mr-2 h-5 w-5" />
+              Add Candidate
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddCandidate} className="flex gap-4">
+              <div className="flex-1">
+                <Label htmlFor="email" className="sr-only">
+                  Email Address
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter candidate's email address"
+                  disabled={isAddingCandidate}
+                  required
+                />
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Button 
+                type="submit" 
+                disabled={isAddingCandidate || !email.trim()}
+              >
+                {isAddingCandidate ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Candidate
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Candidates List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Assigned Candidates ({candidates.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingCandidates ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="ml-2 text-muted-foreground">Loading candidates...</span>
+              </div>
+            ) : candidates.length > 0 ? (
+              <div className="space-y-3">
+                {candidates.map((candidate) => (
+                  <div 
+                    key={candidate._id} 
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex items-center">
+                      <Mail className="h-4 w-4 text-muted-foreground mr-3" />
+                      <div>
+                        <p className="font-medium">{candidate.email}</p>
+                        {candidate.name && (
+                          <p className="text-sm text-muted-foreground">{candidate.name}</p>
+                        )}
+                        {candidate.status && (
+                          <span className="inline-block bg-muted text-xs px-2 py-1 rounded-md mt-1">
+                            {candidate.status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No candidates assigned</h3>
+                <p className="text-muted-foreground">
+                  Add candidates by entering their email addresses above.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </MainLayout>
   );

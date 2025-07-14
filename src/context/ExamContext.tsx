@@ -49,7 +49,8 @@ interface ExamContextType {
   createExam: (examData: Omit<Exam, "id" | "createdAt">) => Promise<void>;
   updateExam: (exam: Exam) => Promise<void>;
   deleteExam: (examId: string) => void;
-  assignExamToUser: (examId: string, userId: string) => void;
+  addExamCandidate: (examId: string, email: string) => Promise<void>;
+  fetchExamCandidates: (examId: string) => Promise<any[]>;
   saveExamResult: (result: Omit<UserExamResult, "completedAt">, complete?: boolean) => void;
   fetchExams: () => Promise<void>;
   fetchExamById: (examId: string) => Promise<Exam | undefined>;
@@ -521,10 +522,45 @@ export function ExamProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const assignExamToUser = (examId: string, userId: string) => {
-    // In a real app, this would make an API call to associate a user with an exam
-    // For our demo, we'll just log it
-    console.log(`Assigned exam ${examId} to user ${userId}`);
+  const addExamCandidate = async (examId: string, email: string): Promise<void> => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("authToken");
+      
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+      
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      await api.post(`/admin/exams/${examId}/add-candidate`, {
+        email: email
+      });
+      
+    } catch (error) {
+      console.error('Error adding exam candidate:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchExamCandidates = async (examId: string): Promise<any[]> => {
+    try {
+      const token = localStorage.getItem("authToken");
+      
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+      
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      const response = await api.get(`/admin/exams/${examId}/candidates`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching exam candidates:', error);
+      throw error;
+    }
   };
 
   const saveExamResult = (
@@ -561,7 +597,8 @@ export function ExamProvider({ children }: { children: ReactNode }) {
         createExam,
         updateExam,
         deleteExam,
-        assignExamToUser,
+        addExamCandidate,
+        fetchExamCandidates,
         saveExamResult,
         fetchExams,
         fetchExamById,
