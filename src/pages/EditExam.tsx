@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useExams } from "@/context/ExamContext";
@@ -37,34 +37,34 @@ export default function EditExam() {
   const [questionType, setQuestionType] = useState<QuestionType>("MULTIPLE_CHOICE");
   const [choices, setChoices] = useState<string[]>(["", ""]);
 
-  useEffect(() => {
-    const loadExam = async () => {
-      if (!examId) return;
-      
-      setIsLoadingExam(true);
-      try {
-        const exam = await fetchExamById(examId);
-        if (exam) {
-          setTitle(exam.title);
-          setDescription(exam.description);
-          setTimeLimit(exam.timeLimit || 30);
-          setPassingScore(exam.passingScore || 70);
-          setQuestions(exam.questions || []);
-        }
-      } catch (error) {
-        console.error('Error loading exam:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load exam details",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoadingExam(false);
+  const loadExam = useCallback(async () => {
+    if (!examId) return;
+    
+    setIsLoadingExam(true);
+    try {
+      const exam = await fetchExamById(examId);
+      if (exam) {
+        setTitle(exam.title);
+        setDescription(exam.description);
+        setTimeLimit(exam.timeLimit || 30);
+        setPassingScore(exam.passingScore || 70);
+        setQuestions(exam.questions || []);
       }
-    };
-
-    loadExam();
+    } catch (error) {
+      console.error('Error loading exam:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load exam details",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingExam(false);
+    }
   }, [examId, fetchExamById, toast]);
+
+  useEffect(() => {
+    loadExam();
+  }, [loadExam]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -245,14 +245,13 @@ export function ExamProvider({ children }: { children: ReactNode }) {
   };
 
   const fetchExamById = async (examId: string): Promise<Exam | undefined> => {
-    setIsLoading(true);
     try {
       // Get token from localStorage
       const token = localStorage.getItem("authToken");
       
       if (!token) {
         console.error("No auth token available");
-        return;
+        throw new Error("Authentication required");
       }
       
       // Set authorization header
@@ -283,8 +282,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error(`Error fetching exam ${examId}:`, error);
-    } finally {
-      setIsLoading(false);
+      throw error;
     }
   };
 
