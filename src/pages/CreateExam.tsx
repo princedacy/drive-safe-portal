@@ -207,10 +207,19 @@ export default function CreateExam() {
     return (
       <MainLayout>
         <div className="container mx-auto py-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <Button variant="ghost" onClick={() => navigate("/exams")} className="mr-4">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Exams
+              </Button>
+              <h1 className="text-3xl font-bold">Loading Exam...</h1>
+            </div>
+          </div>
           <div className="flex items-center justify-center min-h-[400px]">
-            <div className="flex items-center space-x-2">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span>Loading exam details...</span>
+            <div className="flex flex-col items-center space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-muted-foreground">Loading exam details and questions...</p>
             </div>
           </div>
         </div>

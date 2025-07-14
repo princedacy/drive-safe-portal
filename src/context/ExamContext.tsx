@@ -210,19 +210,19 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       // Transform response data to match our Exam interface
       if (response.data && response.data.data) {
         const fetchedExams: Exam[] = response.data.data.map((exam: any) => ({
-          id: exam.id || exam._id,
+          id: exam._id,
           title: exam.title,
           description: exam.description,
           questions: (exam.questions || []).map((question: any) => ({
-            id: question.id || question._id,
+            id: question._id,
             title: question.title,
             description: question.description || "",
             type: question.type,
             choices: question.choices || [],
             answer: question.answer,
           })),
-          timeLimit: exam.timeLimit,
-          passingScore: exam.passingScore,
+          timeLimit: exam.timeLimit || 30,
+          passingScore: exam.passingScore || 70,
           createdAt: exam.createdAt,
         }));
         
