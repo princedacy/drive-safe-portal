@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -44,43 +44,70 @@ export default function CreateExam() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentExam, setCurrentExam] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(isEditing);
   
-  // Find the exam if in edit mode
-  const currentExam = exams.find(exam => exam.id === examId);
+  // Fetch exam details when editing
+  useEffect(() => {
+    const loadExamDetails = async () => {
+      if (isEditing && examId) {
+        setIsLoading(true);
+        try {
+          const examDetails = await fetchExamById(examId);
+          setCurrentExam(examDetails);
+          
+          // Reset form with fetched data
+          if (examDetails) {
+            form.reset({
+              title: examDetails.title,
+              description: examDetails.description,
+              timeLimit: examDetails.timeLimit,
+              passingScore: examDetails.passingScore,
+              questions: examDetails.questions?.map((q: any) => ({
+                title: q.title,
+                description: q.description || "",
+                type: q.type,
+                choices: q.choices || ["", "", "", ""],
+                correctOption: q.answer ? q.answer - 1 : 0,
+                correctAnswer: q.correctAnswer || "",
+              })) || [],
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching exam details:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load exam details.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadExamDetails();
+  }, [examId, isEditing, fetchExamById, toast]);
   
-  // Initialize the form with default values or existing exam data
+  // Initialize the form with default values
   const form = useForm<ExamFormValues>({
     resolver: zodResolver(examSchema),
-    defaultValues: isEditing && currentExam
-      ? {
-          title: currentExam.title,
-          description: currentExam.description,
-          timeLimit: currentExam.timeLimit,
-          passingScore: currentExam.passingScore,
-          questions: currentExam.questions.map(q => ({
-            title: q.title,
-            description: q.description,
-            type: q.type,
-            choices: q.choices || [],
-            answer: q.answer || 1,
-          })),
-        }
-      : {
+    defaultValues: {
+      title: "",
+      description: "",
+      timeLimit: 30,
+      passingScore: 70,
+      questions: [
+        {
           title: "",
           description: "",
-          timeLimit: 30,
-          passingScore: 70,
-          questions: [
-            {
-              title: "",
-              description: "",
-              type: "MULTIPLE_CHOICE",
-              choices: ["", "", "", ""],
-              correctOption: 0,
-              correctAnswer: "",
-            },
-          ],
+          type: "MULTIPLE_CHOICE",
+          choices: ["", "", "", ""],
+          correctOption: 0,
+          correctAnswer: "",
         },
+      ],
+    },
   });
   
   // Use field array for dynamic questions
@@ -176,6 +203,21 @@ export default function CreateExam() {
     });
   };
   
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto py-6">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex items-center space-x-2">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span>Loading exam details...</span>
+            </div>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="container mx-auto py-6">
