@@ -620,14 +620,16 @@ export default function AdminManagement() {
               <CardDescription>
                 {selectedOrganization 
                   ? `Manage admins for ${selectedOrganization.name}` 
-                  : "Select an organization to view and manage admins."
+                  : isOrgAdmin 
+                    ? "Manage admins for your organization."
+                    : "Select an organization to view and manage admins."
                 }
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {selectedOrganizationId ? (
+              {selectedOrganizationId || isOrgAdmin ? (
                 <div className="space-y-4">
-                  {/* Create Admin Button - Always show when organization is selected */}
+                  {/* Create Admin Button - Always show when organization is selected or for org admins */}
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button variant="outline" className="w-full">
@@ -639,7 +641,7 @@ export default function AdminManagement() {
                       <DialogHeader>
                         <DialogTitle>Create Admin</DialogTitle>
                         <DialogDescription>
-                          Add a new admin to {selectedOrganization?.name}.
+                          Add a new admin to {selectedOrganization?.name || "your organization"}.
                         </DialogDescription>
                       </DialogHeader>
                       <Form {...adminForm}>
