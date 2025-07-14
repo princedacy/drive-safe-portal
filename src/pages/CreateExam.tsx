@@ -62,8 +62,7 @@ export default function CreateExam() {
             description: q.description,
             type: q.type,
             choices: q.choices || [],
-            correctOption: q.correctOption || 0,
-            correctAnswer: q.correctAnswer || "",
+            answer: q.answer || 1,
           })),
         }
       : {

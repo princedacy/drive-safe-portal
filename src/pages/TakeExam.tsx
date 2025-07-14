@@ -184,8 +184,8 @@ export default function TakeExam() {
     
     exam.questions.forEach((question, index) => {
       if (question.type === "MULTIPLE_CHOICE" && 
-          question.correctOption !== undefined && 
-          selectedAnswers[index] === question.correctOption) {
+          question.answer !== undefined && 
+          selectedAnswers[index] === (question.answer - 1)) {
         correctAnswers++;
       }
     });
@@ -339,10 +339,10 @@ export default function TakeExam() {
                           key={choiceIndex}
                           className={`p-3 rounded-md border ${
                             choiceIndex === selectedAnswers[index] 
-                              ? choiceIndex === question.correctOption
+                              ? choiceIndex === (question.answer ? question.answer - 1 : 0)
                                 ? "bg-green-100 border-green-300 dark:bg-green-950 dark:border-green-800"
                                 : "bg-red-100 border-red-300 dark:bg-red-950 dark:border-red-800" 
-                              : choiceIndex === question.correctOption
+                              : choiceIndex === (question.answer ? question.answer - 1 : 0)
                                 ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-900"
                                 : ""
                           }`}
@@ -350,12 +350,12 @@ export default function TakeExam() {
                           <div className="flex items-start">
                             <div className="mr-3">
                               {choiceIndex === selectedAnswers[index] ? (
-                                choiceIndex === question.correctOption ? (
+                                choiceIndex === (question.answer ? question.answer - 1 : 0) ? (
                                   <CheckCircle className="h-5 w-5 text-green-600" />
                                 ) : (
                                   <AlertCircle className="h-5 w-5 text-red-600" />
                                 )
-                              ) : choiceIndex === question.correctOption ? (
+                              ) : choiceIndex === (question.answer ? question.answer - 1 : 0) ? (
                                 <CheckCircle className="h-5 w-5 text-green-600" />
                               ) : null}
                             </div>

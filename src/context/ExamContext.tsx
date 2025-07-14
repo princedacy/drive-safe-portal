@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE_URL = "https://dev.backend.hillygeeks.com/api/v1";
+import { API_URL } from "@/config";
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -18,8 +18,7 @@ export interface Question {
   description: string;
   type: "MULTIPLE_CHOICE" | "OPEN_ENDED";
   choices?: string[];
-  correctOption?: number;
-  correctAnswer?: string;
+  answer?: number; // The correct answer index (1-based for API)
   image?: string;
 }
 
@@ -73,7 +72,7 @@ const MOCK_EXAMS: Exam[] = [
         description: "Choose the correct answer",
         type: "MULTIPLE_CHOICE",
         choices: ["Go", "Slow down", "Stop", "Proceed with caution"],
-        correctOption: 2,
+        answer: 3,
       },
       {
         id: "q2",
@@ -86,7 +85,7 @@ const MOCK_EXAMS: Exam[] = [
           "Only at busy intersections",
           "Always, completely"
         ],
-        correctOption: 3,
+        answer: 4,
       },
       {
         id: "q3",
@@ -99,7 +98,7 @@ const MOCK_EXAMS: Exam[] = [
           "Pedestrians can cross",
           "Vehicles can turn right only"
         ],
-        correctOption: 1,
+        answer: 2,
       },
     ],
     timeLimit: 30,
@@ -123,7 +122,7 @@ const MOCK_EXAMS: Exam[] = [
           "3-4 seconds",
           "10 car lengths"
         ],
-        correctOption: 2,
+        answer: 3,
       },
       {
         id: "q2",
@@ -136,7 +135,7 @@ const MOCK_EXAMS: Exam[] = [
           "Accelerate to match the flow of traffic",
           "Use your horn to alert other drivers"
         ],
-        correctOption: 2,
+        answer: 3,
       },
       {
         id: "q3",
@@ -149,7 +148,7 @@ const MOCK_EXAMS: Exam[] = [
           "When in the rightmost lane and traffic is flowing freely",
           "Only when emergency vehicles need to pass"
         ],
-        correctOption: 2,
+        answer: 3,
       },
     ],
     timeLimit: 15,
@@ -206,7 +205,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       const response = await api.get('/admin/exams', {
         params: {
           page: 0,
-          limit: 100,
+          limit: 10,
         }
       });
       
@@ -224,14 +223,15 @@ export function ExamProvider({ children }: { children: ReactNode }) {
             description: question.description || "",
             type: question.type,
             choices: question.choices || [],
-            correctOption: question.correctOption,
-            correctAnswer: question.correctAnswer,
+            answer: question.answer,
           })),
+          timeLimit: exam.timeLimit,
+          passingScore: exam.passingScore,
           createdAt: exam.createdAt,
         }));
         
-        // Set exams to a combination of mock and fetched exams
-        setExams([...MOCK_EXAMS, ...fetchedExams]);
+        // Set exams to fetched data only
+        setExams(fetchedExams);
       }
     } catch (error: any) {
       console.error('Error loading exams:', error);
@@ -273,8 +273,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
             description: question.description || "",
             type: question.type,
             choices: question.choices || [],
-            correctOption: question.correctOption,
-            correctAnswer: question.correctAnswer,
+            answer: question.answer,
           })),
           createdAt: exam.createdAt,
         };
@@ -300,13 +299,12 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       // Set authorization header
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Format questions correctly
+      // Format questions correctly according to API spec
       const formattedQuestions = examData.questions.map(q => ({
         title: q.title,
         description: q.description || "",
         type: q.type,
         choices: q.type === "MULTIPLE_CHOICE" ? (q.choices || []) : [],
-        correctOption: q.type === "MULTIPLE_CHOICE" ? (q.correctOption || 0) : undefined,
       }));
       
       // Create exam via API
@@ -330,8 +328,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
             description: question.description || "",
             type: question.type,
             choices: question.choices || [],
-            correctOption: question.correctOption,
-            correctAnswer: question.correctAnswer,
+            answer: question.answer,
           })),
           createdAt: response.data.createdAt,
         };
@@ -368,7 +365,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
         description: q.description || "",
         type: q.type,
         choices: q.type === "MULTIPLE_CHOICE" ? (q.choices || []) : [],
-        correctOption: q.type === "MULTIPLE_CHOICE" ? (q.correctOption || 0) : undefined,
+        answer: q.type === "MULTIPLE_CHOICE" ? (q.answer || 1) : undefined,
       }));
       
       // Create exam via API
@@ -414,13 +411,13 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       // Set authorization header
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Add question to exam via API
-      const response = await api.post(`/admin/exams/${examId}/add-question`, {
+      // Add question to exam via API with correct structure
+      const response = await api.post(`/admin/exams/${examId}/questions`, {
         title: question.title,
         description: question.description || "",
         type: question.type,
         choices: question.type === "MULTIPLE_CHOICE" ? (question.choices || []) : [],
-        correctOption: question.type === "MULTIPLE_CHOICE" ? (question.correctOption || 0) : undefined,
+        answer: question.type === "MULTIPLE_CHOICE" ? (question.answer || 1) : undefined,
       });
       
       console.log('Add question response:', response.data);
@@ -464,7 +461,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
         description: question.description || "",
         type: question.type,
         choices: question.type === "MULTIPLE_CHOICE" ? (question.choices || []) : [],
-        correctOption: question.type === "MULTIPLE_CHOICE" ? (question.correctOption || 0) : undefined,
+        answer: question.type === "MULTIPLE_CHOICE" ? (question.answer || 1) : undefined,
       });
       
       console.log('Update question response:', response.data);
