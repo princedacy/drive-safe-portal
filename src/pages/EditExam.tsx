@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { PlusCircle, ArrowLeft, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +38,7 @@ export default function EditExam() {
   const [questionDescription, setQuestionDescription] = useState("");
   const [questionType, setQuestionType] = useState<QuestionType>("MULTIPLE_CHOICE");
   const [choices, setChoices] = useState<string[]>(["", ""]);
+  const [correctAnswer, setCorrectAnswer] = useState<number>(1);
 
   const loadExam = useCallback(async () => {
     if (!examId) return;
@@ -117,6 +120,7 @@ export default function EditExam() {
     setQuestionDescription("");
     setQuestionType("MULTIPLE_CHOICE");
     setChoices(["", ""]);
+    setCorrectAnswer(1);
     setEditingQuestion(null);
     setIsAddingQuestion(false);
   };
@@ -130,6 +134,7 @@ export default function EditExam() {
       description: questionDescription,
       type: questionType,
       choices: questionType === "MULTIPLE_CHOICE" ? choices.filter(c => c.trim()) : [],
+      answer: questionType === "MULTIPLE_CHOICE" ? correctAnswer : undefined,
     };
 
     setQuestions([...questions, newQuestion]);
@@ -147,6 +152,7 @@ export default function EditExam() {
     setQuestionDescription(question.description || "");
     setQuestionType(question.type);
     setChoices(question.choices && question.choices.length > 0 ? question.choices : ["", ""]);
+    setCorrectAnswer(question.answer || 1);
     setIsAddingQuestion(true);
   };
 
@@ -159,6 +165,7 @@ export default function EditExam() {
       description: questionDescription,
       type: questionType,
       choices: questionType === "MULTIPLE_CHOICE" ? choices.filter(c => c.trim()) : [],
+      answer: questionType === "MULTIPLE_CHOICE" ? correctAnswer : undefined,
     };
 
     setQuestions(questions.map(q => q.id === editingQuestion.id ? updatedQuestion : q));
@@ -343,37 +350,60 @@ export default function EditExam() {
                     </div>
 
                     {questionType === "MULTIPLE_CHOICE" && (
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Answer Choices</label>
-                        <div className="space-y-2">
-                          {choices.map((choice, index) => (
-                            <div key={index} className="flex gap-2">
-                              <Input
-                                value={choice}
-                                onChange={(e) => updateChoice(index, e.target.value)}
-                                placeholder={`Choice ${index + 1}`}
-                              />
-                              {choices.length > 2 && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => removeChoice(index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          ))}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={addChoice}
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Answer Choices</label>
+                          <div className="space-y-2">
+                            {choices.map((choice, index) => (
+                              <div key={index} className="flex gap-2">
+                                <Input
+                                  value={choice}
+                                  onChange={(e) => updateChoice(index, e.target.value)}
+                                  placeholder={`Choice ${index + 1}`}
+                                />
+                                {choices.length > 2 && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => removeChoice(index)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={addChoice}
+                            >
+                              <PlusCircle className="mr-2 h-4 w-4" />
+                              Add Choice
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Correct Answer</label>
+                          <RadioGroup
+                            value={correctAnswer.toString()}
+                            onValueChange={(value) => setCorrectAnswer(parseInt(value))}
+                            className="space-y-2"
                           >
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Add Choice
-                          </Button>
+                            {choices.map((choice, index) => (
+                              <div key={index} className="flex items-center space-x-2">
+                                <RadioGroupItem value={(index + 1).toString()} id={`option-${index}`} />
+                                <Label htmlFor={`option-${index}`} className="flex-1">
+                                  {choice || `Choice ${index + 1}`}
+                                </Label>
+                              </div>
+                            ))}
+                          </RadioGroup>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Select which option is the correct answer
+                          </p>
                         </div>
                       </div>
                     )}
