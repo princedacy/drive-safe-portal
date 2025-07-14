@@ -2,7 +2,7 @@
 import { ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { LogOut, User, Settings, FileQuestion, Users, BookOpen, Home, Menu, X } from "lucide-react";
+import { LogOut, User, Settings, FileQuestion, Users, BookOpen, Home, Menu, X, ChevronDown, BarChart3, Grid3X3, Folder } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -89,103 +89,134 @@ export function MainLayout({ children }: MainLayoutProps) {
         {currentUser && (
           <div className={`
             fixed md:relative z-50 md:z-auto
-            w-64 sm:w-72 md:w-64 lg:w-72
+            w-80 md:w-80
             h-full md:h-auto
             bg-sidebar text-sidebar-foreground 
-            flex flex-col border-r shadow-lg md:shadow-sm
+            flex flex-col border-r border-sidebar-border shadow-lg md:shadow-sm
             transition-transform duration-300 ease-in-out
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             ${!isSidebarOpen ? 'md:block hidden' : 'block'}
           `}>
-            <div className="flex-1 flex flex-col">
-              <nav className="p-3 sm:p-4">
-                <ul className="space-y-1 sm:space-y-2">
-                  <li>
+            {/* User Profile Section */}
+            <div className="p-6 border-b border-sidebar-border">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-sidebar-primary flex items-center justify-center">
+                  <User className="h-5 w-5 text-sidebar-primary-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-sidebar-foreground truncate">
+                    {currentUser.email?.split('@')[0] || 'User'}
+                  </h3>
+                  <p className="text-xs text-sidebar-foreground/70 capitalize">
+                    {currentUser.role?.toLowerCase() || 'user'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Content */}
+            <div className="flex-1 flex flex-col overflow-y-auto">
+              {/* Quick Access */}
+              <div className="p-6">
+                <div className="space-y-2">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-10 rounded-lg"
+                    onClick={() => {
+                      navigate("/dashboard");
+                      closeSidebar();
+                    }}
+                  >
+                    <Home className="mr-3 h-4 w-4 flex-shrink-0" />
+                    <span>Dashboard</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Admin Section */}
+              {isAdminOrAbove && (
+                <div className="px-6 pb-6">
+                  <div className="mb-3">
+                    <h4 className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
+                      Management
+                    </h4>
+                  </div>
+                  <div className="space-y-1">
                     <Button
                       variant="ghost"
-                      className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
+                      className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-10 rounded-lg"
                       onClick={() => {
-                        navigate("/dashboard");
+                        navigate("/exams");
                         closeSidebar();
                       }}
                     >
-                      <Home className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                      <span className="truncate">Dashboard</span>
+                      <FileQuestion className="mr-3 h-4 w-4 flex-shrink-0" />
+                      <span>Exams</span>
                     </Button>
-                  </li>
-                  
-                  {isAdminOrAbove && (
-                    <>
-                      <li>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
-                          onClick={() => {
-                            navigate("/exams");
-                            closeSidebar();
-                          }}
-                        >
-                          <FileQuestion className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                          <span className="truncate">Manage Exams</span>
-                        </Button>
-                      </li>
-                      <li>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
-                          onClick={() => {
-                            navigate("/users");
-                            closeSidebar();
-                          }}
-                        >
-                          <Users className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                          <span className="truncate">Manage Users</span>
-                        </Button>
-                      </li>
-                    </>
-                  )}
-                  
-                  {currentUser.role === "USER" && (
-                    <li>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
-                        onClick={() => {
-                          navigate("/my-exams");
-                          closeSidebar();
-                        }}
-                      >
-                        <BookOpen className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                        <span className="truncate">My Exams</span>
-                      </Button>
-                    </li>
-                  )}
-                  
-                  {isAdminOrAbove && (
-                    <li>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
-                        onClick={() => {
-                          navigate("/admin-management");
-                          closeSidebar();
-                        }}
-                      >
-                        <Users className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                        <span className="truncate">Manage Admins</span>
-                      </Button>
-                    </li>
-                  )}
-                </ul>
-              </nav>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-10 rounded-lg"
+                      onClick={() => {
+                        navigate("/users");
+                        closeSidebar();
+                      }}
+                    >
+                      <Users className="mr-3 h-4 w-4 flex-shrink-0" />
+                      <span>Users</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-10 rounded-lg"
+                      onClick={() => {
+                        navigate("/admin-management");
+                        closeSidebar();
+                      }}
+                    >
+                      <Settings className="mr-3 h-4 w-4 flex-shrink-0" />
+                      <span>Admins</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* User Section */}
+              {currentUser.role === "USER" && (
+                <div className="px-6 pb-6">
+                  <div className="mb-3">
+                    <h4 className="text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider">
+                      My Learning
+                    </h4>
+                  </div>
+                  <div className="space-y-1">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-10 rounded-lg"
+                      onClick={() => {
+                        navigate("/my-exams");
+                        closeSidebar();
+                      }}
+                    >
+                      <BookOpen className="mr-3 h-4 w-4 flex-shrink-0" />
+                      <span>My Exams</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
               
-              {/* Spacer to push role info to bottom */}
+              {/* Push content to bottom */}
               <div className="flex-1"></div>
             </div>
             
-            {/* Role info at the very bottom */}
-            <div className="p-3 sm:p-4 text-xs sm:text-sm border-t bg-sidebar">
-              <p className="truncate">Logged in as: {currentUser.role}</p>
+            {/* Footer */}
+            <div className="p-6 border-t border-sidebar-border">
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-10 rounded-lg"
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-3 h-4 w-4 flex-shrink-0" />
+                <span>Sign Out</span>
+              </Button>
             </div>
           </div>
         )}
