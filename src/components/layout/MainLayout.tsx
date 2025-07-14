@@ -177,7 +177,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 )}
               </ul>
             </nav>
-            <div className="p-3 sm:p-4 text-xs sm:text-sm border-t mt-auto">
+            <div className="p-3 sm:p-4 text-xs sm:text-sm border-t">
               <p className="truncate">Logged in as: {currentUser.role}</p>
             </div>
           </div>
