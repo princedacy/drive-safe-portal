@@ -97,86 +97,91 @@ export function MainLayout({ children }: MainLayoutProps) {
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             ${!isSidebarOpen ? 'md:block hidden' : 'block'}
           `}>
-            <nav className="p-3 sm:p-4 flex-1 overflow-y-auto">
-              <ul className="space-y-1 sm:space-y-2">
-                <li>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
-                    onClick={() => {
-                      navigate("/dashboard");
-                      closeSidebar();
-                    }}
-                  >
-                    <Home className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                    <span className="truncate">Dashboard</span>
-                  </Button>
-                </li>
-                
-                {isAdminOrAbove && (
-                  <>
+            <div className="flex-1 flex flex-col">
+              <nav className="p-3 sm:p-4">
+                <ul className="space-y-1 sm:space-y-2">
+                  <li>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
+                      onClick={() => {
+                        navigate("/dashboard");
+                        closeSidebar();
+                      }}
+                    >
+                      <Home className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                      <span className="truncate">Dashboard</span>
+                    </Button>
+                  </li>
+                  
+                  {isAdminOrAbove && (
+                    <>
+                      <li>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
+                          onClick={() => {
+                            navigate("/exams");
+                            closeSidebar();
+                          }}
+                        >
+                          <FileQuestion className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                          <span className="truncate">Manage Exams</span>
+                        </Button>
+                      </li>
+                      <li>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
+                          onClick={() => {
+                            navigate("/users");
+                            closeSidebar();
+                          }}
+                        >
+                          <Users className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                          <span className="truncate">Manage Users</span>
+                        </Button>
+                      </li>
+                    </>
+                  )}
+                  
+                  {currentUser.role === "USER" && (
                     <li>
                       <Button
                         variant="ghost"
                         className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
                         onClick={() => {
-                          navigate("/exams");
+                          navigate("/my-exams");
                           closeSidebar();
                         }}
                       >
-                        <FileQuestion className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                        <span className="truncate">Manage Exams</span>
+                        <BookOpen className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                        <span className="truncate">My Exams</span>
                       </Button>
                     </li>
+                  )}
+                  
+                  {isAdminOrAbove && (
                     <li>
                       <Button
                         variant="ghost"
                         className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
                         onClick={() => {
-                          navigate("/users");
+                          navigate("/admin-management");
                           closeSidebar();
                         }}
                       >
                         <Users className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                        <span className="truncate">Manage Users</span>
+                        <span className="truncate">Manage Admins</span>
                       </Button>
                     </li>
-                  </>
-                )}
-                
-                {currentUser.role === "USER" && (
-                  <li>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
-                      onClick={() => {
-                        navigate("/my-exams");
-                        closeSidebar();
-                      }}
-                    >
-                      <BookOpen className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                      <span className="truncate">My Exams</span>
-                    </Button>
-                  </li>
-                )}
-                
-                {isAdminOrAbove && (
-                  <li>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground text-sm sm:text-base h-9 sm:h-10"
-                      onClick={() => {
-                        navigate("/admin-management");
-                        closeSidebar();
-                      }}
-                    >
-                      <Users className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                      <span className="truncate">Manage Admins</span>
-                    </Button>
-                  </li>
-                )}
-              </ul>
-            </nav>
+                  )}
+                </ul>
+              </nav>
+              
+              {/* Spacer to push role info to bottom */}
+              <div className="flex-1"></div>
+            </div>
             
             {/* Role info at the very bottom */}
             <div className="p-3 sm:p-4 text-xs sm:text-sm border-t bg-sidebar">
