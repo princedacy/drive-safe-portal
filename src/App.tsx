@@ -17,6 +17,7 @@ import Profile from "./pages/Profile";
 import MagicLinkLogin from "./pages/MagicLinkLogin";
 import ExamsManagement from "./pages/ExamsManagement";
 import CreateExam from "./pages/CreateExam";
+import EditExam from "./pages/EditExam";
 import AssignExam from "./pages/AssignExam";
 import UsersManagement from "./pages/UsersManagement";
 import AdminManagement from "./pages/AdminManagement";
@@ -84,7 +85,7 @@ const App = () => (
                   path="/exams/edit/:examId" 
                   element={
                     <ProtectedRoute allowedRoles={[ADMIN_ROLE, SUPER_ADMIN_ROLE]}>
-                      <CreateExam />
+                      <EditExam />
                     </ProtectedRoute>
                   } 
                 />
