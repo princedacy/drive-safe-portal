@@ -97,8 +97,8 @@ export function MainLayout({ children }: MainLayoutProps) {
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             ${!isSidebarOpen ? 'md:block hidden' : 'block'}
           `}>
-            <nav className="p-3 sm:p-4 flex-1 overflow-y-auto">
-              <ul className="space-y-1 sm:space-y-2">
+            <nav className="p-3 sm:p-4 flex-1 overflow-y-auto flex flex-col">
+              <ul className="space-y-1 sm:space-y-2 flex-1">
                 <li>
                   <Button
                     variant="ghost"
@@ -177,7 +177,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 )}
               </ul>
             </nav>
-            <div className="p-3 sm:p-4 text-xs sm:text-sm border-t">
+            <div className="p-3 sm:p-4 text-xs sm:text-sm border-t mt-auto">
               <p className="truncate">Logged in as: {currentUser.role}</p>
             </div>
           </div>
