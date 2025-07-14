@@ -108,11 +108,11 @@ const App = () => (
                   } 
                 />
                 
-                {/* Super admin routes */}
+                {/* Admin routes - Super admin and Organization admin */}
                 <Route 
                   path="/admin-management" 
                   element={
-                    <ProtectedRoute allowedRoles={[SUPER_ADMIN_ROLE]}>
+                    <ProtectedRoute allowedRoles={[SUPER_ADMIN_ROLE, ADMIN_ROLE]}>
                       <AdminManagement />
                     </ProtectedRoute>
                   } 

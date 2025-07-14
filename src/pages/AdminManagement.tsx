@@ -132,7 +132,11 @@ export default function AdminManagement() {
   const [currentPage, setCurrentPage] = useState(0);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
-  const { token } = useAuth();
+  const { token, currentUser } = useAuth();
+  
+  // Check if user is super admin or organization admin
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isOrgAdmin = currentUser?.role === 'ORGANIZATION_ADMIN';
 
   // Fetch organizations with pagination using correct endpoint
   const { data: organizationsData, isLoading: isOrganizationsLoading, error: organizationsError } = useQuery({
@@ -143,12 +147,27 @@ export default function AdminManagement() {
       }
       
       console.log('Fetching organizations...');
-      const response = await axios.get(`${API_URL}/super/organizations?page=${currentPage}&limit=${limit}`, {
+      // Use different endpoint based on user role
+      const endpoint = isSuperAdmin 
+        ? `${API_URL}/super/organizations?page=${currentPage}&limit=${limit}`
+        : `${API_URL}/admin/organizations`; // Organization admin sees only their org
+      
+      const response = await axios.get(endpoint, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
       });
       console.log('Organizations response:', response.data);
+      
+      // Handle different response formats
+      if (isOrgAdmin && !response.data.data) {
+        // If org admin gets direct organization data, wrap it in pagination format
+        return {
+          data: Array.isArray(response.data) ? response.data : [response.data],
+          meta: { total: 1, page: 0, limit: 10, totalPages: 1 }
+        } as PaginatedResponse<Organization>;
+      }
+      
       return response.data as PaginatedResponse<Organization>;
     },
     enabled: !!token,
@@ -161,7 +180,12 @@ export default function AdminManagement() {
       if (!selectedOrganizationId || !token) return null;
       
       console.log('Fetching single organization:', selectedOrganizationId);
-      const response = await axios.get(`${API_URL}/super/organizations/${selectedOrganizationId}`, {
+      // Use different endpoint based on user role
+      const endpoint = isSuperAdmin 
+        ? `${API_URL}/super/organizations/${selectedOrganizationId}`
+        : `${API_URL}/admin/organizations/${selectedOrganizationId}`;
+        
+      const response = await axios.get(endpoint, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
@@ -191,7 +215,12 @@ export default function AdminManagement() {
       if (!selectedOrganizationId || !token) return { data: [] };
       
       console.log('Fetching admins for organization:', selectedOrganizationId);
-      const response = await axios.get(`${API_URL}/super/organizations/${selectedOrganizationId}/users?page=0&limit=100`, {
+      // Use different endpoint based on user role
+      const endpoint = isSuperAdmin
+        ? `${API_URL}/super/organizations/${selectedOrganizationId}/users?page=0&limit=100`
+        : `${API_URL}/admin/organizations/${selectedOrganizationId}/users?page=0&limit=100`;
+        
+      const response = await axios.get(endpoint, {
         headers: {
           Authorization: `Bearer ${token}`,
         }
@@ -235,11 +264,11 @@ export default function AdminManagement() {
     },
   });
 
-  // Create organization mutation with correct schema
+  // Create organization mutation with correct schema - only for super admins
   const createOrganizationMutation = useMutation({
     mutationFn: async (data: z.infer<typeof organizationSchema>) => {
-      if (!token) {
-        throw new Error("No authentication token found");
+      if (!token || !isSuperAdmin) {
+        throw new Error("No authentication token found or insufficient permissions");
       }
       
       return axios.post(`${API_URL}/super/organizations`, data, {
@@ -285,15 +314,17 @@ export default function AdminManagement() {
       console.log('Creating admin with data:', adminData);
       console.log('Organization ID:', data.organizationId);
       
-      return axios.post(`${API_URL}/super/organizations/${data.organizationId}/users`, 
-        adminData, 
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          }
+      // Use different endpoint based on user role
+      const endpoint = isSuperAdmin
+        ? `${API_URL}/super/organizations/${data.organizationId}/users`
+        : `${API_URL}/admin/organizations/${data.organizationId}/users`;
+      
+      return axios.post(endpoint, adminData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         }
-      );
+      });
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({queryKey: ['admins', variables.organizationId]});
@@ -384,13 +415,28 @@ export default function AdminManagement() {
 
   const actualTotalPages = organizationsData?.meta?.totalPages || 1;
 
+  // Auto-select organization for org admins
+  useEffect(() => {
+    if (isOrgAdmin && organizationsData?.data && organizationsData.data.length > 0) {
+      const firstOrg = organizationsData.data[0];
+      const orgId = firstOrg.id || firstOrg._id;
+      if (orgId) {
+        setSelectedOrganizationId(orgId);
+        adminForm.setValue('organizationId', orgId);
+      }
+    }
+  }, [isOrgAdmin, organizationsData, adminForm]);
+
   return (
     <MainLayout>
       <div className="container mx-auto py-6">
-        <h1 className="text-2xl font-bold mb-6">Admin & Organization Management</h1>
+        <h1 className="text-2xl font-bold mb-6">
+          {isSuperAdmin ? 'Admin & Organization Management' : 'Admin Management'}
+        </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Organizations Section */}
+        <div className={`grid grid-cols-1 ${isSuperAdmin ? 'md:grid-cols-2' : ''} gap-6`}>
+          {/* Organizations Section - Only show for super admins */}
+          {isSuperAdmin && (
           <Card className="shadow-md">
             <CardHeader>
               <CardTitle>Organizations</CardTitle>
@@ -565,6 +611,7 @@ export default function AdminManagement() {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Admins Section */}
           <Card className="shadow-md">
