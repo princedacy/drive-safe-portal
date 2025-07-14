@@ -555,8 +555,16 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
+      console.log('Fetching candidates for exam:', examId);
       const response = await api.get(`/admin/exams/${examId}/candidates`);
-      return response.data;
+      console.log('Candidates response:', response.data);
+      
+      // Handle different response formats
+      if (response.data?.data) {
+        return response.data.data;
+      }
+      
+      return response.data || [];
     } catch (error) {
       console.error('Error fetching exam candidates:', error);
       throw error;
