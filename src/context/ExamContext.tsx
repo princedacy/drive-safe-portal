@@ -201,8 +201,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       const response = await api.get('/admin/exams', {
         params: {
           page: 0,
-          limit: 10,
-          includeQuestions: true
+          limit: 10
         }
       });
       

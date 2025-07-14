@@ -67,9 +67,6 @@ export default function ExamsManagement() {
                   <p className="text-sm text-muted-foreground mb-4">{exam.description}</p>
                   <div className="flex flex-wrap gap-2 mb-4">
                     <div className="bg-muted text-xs px-2 py-1 rounded-md">
-                      {exam.questions.length} Questions
-                    </div>
-                    <div className="bg-muted text-xs px-2 py-1 rounded-md">
                       {exam.timeLimit} Minutes
                     </div>
                     <div className="bg-muted text-xs px-2 py-1 rounded-md">
