@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { PlusCircle, Search, Edit, Trash2, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,8 +15,11 @@ export default function ExamsManagement() {
   const { exams, deleteExam } = useExams();
   const [searchQuery, setSearchQuery] = useState("");
   const [examToDelete, setExamToDelete] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const EXAMS_PER_PAGE = 6;
 
   const handleDeleteExam = () => {
     if (examToDelete) {
@@ -32,6 +36,18 @@ export default function ExamsManagement() {
     (exam.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
     (exam.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
+
+  // Reset to first page when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredExams.length / EXAMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * EXAMS_PER_PAGE;
+  const endIndex = startIndex + EXAMS_PER_PAGE;
+  const currentExams = filteredExams.slice(startIndex, endIndex);
 
   return (
     <MainLayout>
@@ -51,14 +67,15 @@ export default function ExamsManagement() {
               placeholder="Search exams..." 
               className="pl-10"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
         </div>
 
         {filteredExams.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
-            {filteredExams.map((exam) => (
+          <>
+            <div className="grid grid-cols-1 gap-4">
+              {currentExams.map((exam) => (
               <Card key={exam.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
                   <CardTitle>{exam.title}</CardTitle>
@@ -125,8 +142,43 @@ export default function ExamsManagement() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-12 bg-muted/30 rounded-lg">
             <h3 className="text-lg font-medium mb-2">No exams found</h3>
