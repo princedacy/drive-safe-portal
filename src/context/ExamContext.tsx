@@ -360,20 +360,10 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       // Set authorization header
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Format questions correctly
-      const formattedQuestions = updatedExam.questions.map(q => ({
-        title: q.title,
-        description: q.description || "",
-        type: q.type,
-        choices: q.type === "MULTIPLE_CHOICE" ? (q.choices || []) : [],
-        answer: q.type === "MULTIPLE_CHOICE" ? (q.answer || 1) : undefined,
-      }));
-      
-      // Create exam via API
+      // Send only title and description for exam updates (no questions)
       const response = await api.put(`/admin/exams/${updatedExam.id}`, {
         title: updatedExam.title,
         description: updatedExam.description,
-        questions: formattedQuestions,
       });
       
       console.log('Update exam response:', response.data);
@@ -456,14 +446,21 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       // Set authorization header
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Update question via API
-      const response = await api.put(`/admin/exams/${examId}/question/${questionId}`, {
+      // Prepare update payload with only changed/relevant fields
+      const updatePayload: any = {
         title: question.title,
         description: question.description || "",
         type: question.type,
-        choices: question.type === "MULTIPLE_CHOICE" ? (question.choices || []) : [],
-        answer: question.type === "MULTIPLE_CHOICE" ? (question.answer || 1) : undefined,
-      });
+      };
+
+      // Only include choices and answer for MULTIPLE_CHOICE questions
+      if (question.type === "MULTIPLE_CHOICE") {
+        updatePayload.choices = question.choices || [];
+        updatePayload.answer = question.answer || 1;
+      }
+
+      // Update question via API
+      const response = await api.put(`/admin/exams/${examId}/question/${questionId}`, updatePayload);
       
       console.log('Update question response:', response.data);
       
