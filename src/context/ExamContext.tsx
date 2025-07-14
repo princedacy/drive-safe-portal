@@ -262,14 +262,16 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       const response = await api.get(`/admin/exams/${examId}`);
       console.log('Exam detail response:', response.data);
       
-      if (response.data) {
-        const exam = response.data;
+      if (response.data && response.data.data) {
+        const exam = response.data.data;
         return {
-          id: exam.id || exam._id,
+          id: exam._id,
           title: exam.title,
           description: exam.description,
+          timeLimit: exam.timeLimit,
+          passingScore: exam.passingScore,
           questions: (exam.questions || []).map((question: any) => ({
-            id: question.id || question._id,
+            id: question._id,
             title: question.title,
             description: question.description || "",
             type: question.type,
