@@ -179,11 +179,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Load mock data on init
-    setExams(MOCK_EXAMS);
-    setUserExamResults(MOCK_RESULTS);
-    
-    // Load real exams
+    // Load real exams on init
     fetchExams();
   }, []);
 
@@ -232,11 +228,16 @@ export function ExamProvider({ children }: { children: ReactNode }) {
         
         // Set exams to fetched data only
         setExams(fetchedExams);
+      } else {
+        // No data received, set empty array
+        setExams([]);
       }
     } catch (error: any) {
       console.error('Error loading exams:', error);
-      if (error.response?.data?.data?.allowedRole === "ORGANIZATION_ADMIN") {
-        console.log("Current user does not have ORGANIZATION_ADMIN role");
+      // Clear exams on error to avoid showing stale data
+      setExams([]);
+      if (error.response?.status === 403) {
+        console.log("Access denied - user may not have required permissions");
       }
     } finally {
       setIsLoading(false);
