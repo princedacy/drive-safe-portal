@@ -198,8 +198,15 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       // Set authorization header
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
+      // Decode token to get user role
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userRole = payload.role;
+      
+      // Use appropriate endpoint based on user role
+      const endpoint = userRole === 'SUPER_ADMIN' ? '/super/exams' : '/admin/exams';
+      
       // Fetch exams from API
-      const response = await api.get('/admin/exams', {
+      const response = await api.get(endpoint, {
         params: {
           page: 0,
           limit: 10

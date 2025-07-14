@@ -160,7 +160,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                   </li>
                 )}
                 
-                {isSuperAdmin && (
+                {isAdminOrAbove && (
                   <li>
                     <Button
                       variant="ghost"
