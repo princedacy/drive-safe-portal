@@ -177,9 +177,6 @@ export function MainLayout({ children }: MainLayoutProps) {
                 )}
               </ul>
             </nav>
-            <div className="p-3 sm:p-4 text-xs sm:text-sm border-t">
-              <p className="truncate">Logged in as: {currentUser.role}</p>
-            </div>
           </div>
         )}
         
@@ -190,6 +187,13 @@ export function MainLayout({ children }: MainLayoutProps) {
           </div>
         </main>
       </div>
+      
+      {/* Footer with role info */}
+      {currentUser && (
+        <footer className="bg-muted text-muted-foreground py-2 px-4 text-xs text-center border-t">
+          <p>Logged in as: {currentUser.role}</p>
+        </footer>
+      )}
     </div>
   );
 }
