@@ -417,7 +417,24 @@ export default function AdminManagement() {
 
   // Auto-select organization for org admins
   useEffect(() => {
-    if (isOrgAdmin && organizationsData?.data && organizationsData.data.length > 0) {
+    if (isOrgAdmin) {
+      // Extract organization from JWT token for org admins
+      const token = localStorage.getItem("authToken");
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (payload.organization && payload.organization._id) {
+            const orgId = payload.organization._id;
+            setSelectedOrganizationId(orgId);
+            setSelectedOrganization(payload.organization);
+            adminForm.setValue('organizationId', orgId);
+            console.log('Set organization from token:', orgId);
+          }
+        } catch (error) {
+          console.error('Error parsing token:', error);
+        }
+      }
+    } else if (organizationsData?.data && organizationsData.data.length > 0) {
       const firstOrg = organizationsData.data[0];
       const orgId = firstOrg.id || firstOrg._id;
       if (orgId) {
