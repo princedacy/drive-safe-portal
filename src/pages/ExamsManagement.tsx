@@ -29,8 +29,8 @@ export default function ExamsManagement() {
   };
 
   const filteredExams = exams.filter((exam) =>
-    exam.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    exam.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (exam.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (exam.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   return (
