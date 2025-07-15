@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { LogOut, User, Settings, FileQuestion, Users, BookOpen, Home, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ADMIN_ROLE, SUPER_ADMIN_ROLE } from "@/types/UserRole";
+import { formatUserRole } from "@/lib/format-utils";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -69,8 +70,8 @@ export function MainLayout({ children }: MainLayoutProps) {
                     <h3 className="font-medium text-sidebar-foreground truncate">
                       {currentUser.email?.split('@')[0] || 'User'}
                     </h3>
-                    <p className="text-xs text-sidebar-foreground/70 capitalize">
-                      {currentUser.role?.toLowerCase() || 'user'}
+                    <p className="text-xs text-sidebar-foreground/70">
+                      {formatUserRole(currentUser.role || "")}
                     </p>
                   </div>
                 </div>
