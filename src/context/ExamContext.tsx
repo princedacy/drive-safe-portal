@@ -186,6 +186,7 @@ export function ExamProvider({ children }: { children: ReactNode }) {
 
   const fetchExams = async () => {
     setIsLoading(true);
+    console.log('Starting to fetch exams...');
     try {
       // Get token from localStorage
       const token = localStorage.getItem("authToken");
@@ -202,8 +203,12 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const userRole = payload.role;
       
+      console.log('User role for exams fetch:', userRole);
+      
       // Use appropriate endpoint based on user role
       const endpoint = userRole === 'SUPER_ADMIN' ? '/super/exams' : '/admin/exams';
+      
+      console.log('Fetching exams from endpoint:', endpoint);
       
       // Fetch exams from API
       const response = await api.get(endpoint, {
@@ -242,12 +247,15 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       }
     } catch (error: any) {
       console.error('Error loading exams:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
       // Clear exams on error to avoid showing stale data
       setExams([]);
       if (error.response?.status === 403) {
         console.log("Access denied - user may not have required permissions");
       }
     } finally {
+      console.log('Finished fetching exams');
       setIsLoading(false);
     }
   };
