@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
+import { formatUserRole } from "@/lib/format-utils";
 
 export default function Profile() {
   const { currentUser, logout } = useAuth();
@@ -62,7 +63,7 @@ export default function Profile() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3">
                   <div>
                     <p className="text-sm text-muted-foreground">Account Type</p>
-                    <p className="font-medium">{currentUser?.role}</p>
+                    <p className="font-medium">{formatUserRole(currentUser?.role || "")}</p>
                   </div>
                 </div>
               </CardContent>

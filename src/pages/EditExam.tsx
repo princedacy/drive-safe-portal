@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { PlusCircle, ArrowLeft, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatQuestionType } from "@/lib/format-utils";
 import type { Question } from "@/context/ExamContext";
 
 type QuestionType = "MULTIPLE_CHOICE" | "OPEN_ENDED";
@@ -436,7 +437,7 @@ export default function EditExam() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <span className="text-sm font-medium">Q{index + 1}</span>
-                              <Badge variant="secondary">{question.type}</Badge>
+                              <Badge variant="secondary">{formatQuestionType(question.type)}</Badge>
                             </div>
                             <h4 className="font-medium">{question.title}</h4>
                             {question.description && (

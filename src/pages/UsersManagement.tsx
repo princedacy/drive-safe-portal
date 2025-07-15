@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { formatUserRole } from "@/lib/format-utils";
 import { Search, UserPlus, Mail, Trash2 } from "lucide-react";
 import {
   Select,
@@ -212,7 +213,7 @@ export default function UsersManagement() {
                         ? "bg-secondary text-secondary-foreground"
                         : "bg-muted text-muted-foreground"
                     }`}>
-                      {user.role}
+                      {formatUserRole(user.role)}
                     </span>
                   </div>
                   <div className="w-24 text-right">

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { formatDisplayText, formatUserRole } from "@/lib/format-utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { API_URL } from "@/config";
@@ -483,7 +484,7 @@ export default function AdminManagement() {
                             <TableRow key={orgId}>
                               <TableCell>{organization.name}</TableCell>
                               <TableCell>{organization.address}</TableCell>
-                              <TableCell>{organization.type}</TableCell>
+                              <TableCell>{formatDisplayText(organization.type)}</TableCell>
                               <TableCell>
                                 <Button 
                                   variant="outline" 
@@ -768,7 +769,7 @@ export default function AdminManagement() {
                               </TableCell>
                               <TableCell>{admin.email}</TableCell>
                               <TableCell>{admin.phone}</TableCell>
-                              <TableCell>{admin.role}</TableCell>
+                              <TableCell>{formatUserRole(admin.role)}</TableCell>
                             </TableRow>
                           ))
                         ) : (
