@@ -28,9 +28,9 @@ export function MainLayout({ children }: MainLayoutProps) {
   const closeSidebar = () => setIsSidebarOpen(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-primary text-primary-foreground py-4 px-6 flex items-center shadow-sm sticky top-0 z-50">
+      <header className="bg-primary text-primary-foreground py-4 px-6 flex items-center shadow-sm fixed top-0 left-0 right-0 z-50">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -42,7 +42,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <h1 className="text-xl font-semibold">Ikizamini</h1>
       </header>
       
-      <div className="flex flex-1 relative">
+      <div className="flex pt-16 relative">
         {/* Mobile Overlay */}
         {isSidebarOpen && (
           <div 
@@ -58,6 +58,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             bg-sidebar text-sidebar-foreground 
             flex flex-col border-r border-sidebar-border shadow-sm
             transition-all duration-300 ease-in-out
+            fixed left-0 top-16 bottom-0 z-40
           `}>
             {/* User Profile Section */}
             {isSidebarExpanded && (
@@ -190,7 +191,9 @@ export function MainLayout({ children }: MainLayoutProps) {
         )}
         
         {/* Main content */}
-        <main className="flex-1 bg-background p-3 sm:p-4 lg:p-6 overflow-auto min-h-0">
+        <main className={`flex-1 bg-background p-3 sm:p-4 lg:p-6 overflow-auto min-h-screen ${
+          currentUser ? (isSidebarExpanded ? 'ml-80' : 'ml-20') : ''
+        } transition-all duration-300 ease-in-out`}>
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
