@@ -12,12 +12,17 @@ import { PlusCircle, Search, Edit, Trash2, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ExamsManagement() {
-  const { exams, deleteExam } = useExams();
+  const { exams, deleteExam, isLoading } = useExams();
   const [searchQuery, setSearchQuery] = useState("");
   const [examToDelete, setExamToDelete] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Debug logging
+  console.log('ExamsManagement rendered with exams:', exams.length, 'items');
+  console.log('ExamsManagement isLoading:', isLoading);
+  console.log('ExamsManagement current exams:', exams.map(e => ({ id: e.id, title: e.title })));
 
   const EXAMS_PER_PAGE = 6;
 
@@ -72,7 +77,12 @@ export default function ExamsManagement() {
           </div>
         </div>
 
-        {filteredExams.length > 0 ? (
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading exams...</p>
+          </div>
+        ) : filteredExams.length > 0 ? (
           <>
             <div className="grid grid-cols-1 gap-4">
               {currentExams.map((exam) => (

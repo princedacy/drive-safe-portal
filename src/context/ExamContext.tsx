@@ -2,6 +2,7 @@ import { createContext, useContext, useState, ReactNode, useEffect } from "react
 import axios from "axios";
 
 import { API_URL } from "@/config";
+import { useAuth } from "@/context/AuthContext";
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -178,43 +179,73 @@ export function ExamProvider({ children }: { children: ReactNode }) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [userExamResults, setUserExamResults] = useState<UserExamResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { currentUser, isAuthenticated } = useAuth();
 
+  // Effect to fetch exams when authentication state changes
   useEffect(() => {
-    // Load real exams on init
-    fetchExams();
-  }, []);
+    console.log('ExamProvider: Auth state changed', { 
+      isAuthenticated, 
+      userId: currentUser?.id, 
+      userRole: currentUser?.role 
+    });
+    
+    // Clear exams first
+    setExams([]);
+    
+    if (isAuthenticated && currentUser) {
+      // Add a small delay to ensure token is properly set
+      const timer = setTimeout(() => {
+        fetchExams();
+      }, 200);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, currentUser?.id]); // Re-run when auth state or user changes
 
   const fetchExams = async () => {
     setIsLoading(true);
     console.log('Starting to fetch exams...');
+    
+    // Clear exams at start to show loading state properly
+    setExams([]);
+    
     try {
-      // Get token from localStorage
+      // Get fresh token from localStorage
       const token = localStorage.getItem("authToken");
       
       if (!token) {
         console.error("No auth token available");
+        setExams([]);
         return;
       }
       
-      // Set authorization header
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      console.log('Token found, length:', token.length);
       
       // Decode token to get user role
       const payload = JSON.parse(atob(token.split('.')[1]));
       const userRole = payload.role;
+      const userId = payload.id;
       
       console.log('User role for exams fetch:', userRole);
+      console.log('User ID for exams fetch:', userId);
       
       // Use appropriate endpoint based on user role
       const endpoint = userRole === 'SUPER_ADMIN' ? '/super/exams' : '/admin/exams';
       
       console.log('Fetching exams from endpoint:', endpoint);
       
+      // Create fresh headers for this request (don't rely on global defaults)
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
       // Fetch exams from API
       const response = await api.get(endpoint, {
+        headers,
         params: {
           page: 0,
-          limit: 10
+          limit: 50  // Increased limit to get more exams
         }
       });
       
