@@ -4,11 +4,13 @@ import { useAuth } from "@/context/AuthContext";
 import { SUPER_ADMIN_ROLE } from "@/types/UserRole";
 import { useUsers } from "@/context/UserContext";
 import { MetricCard } from "@/components/dashboard/MetricCard";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const { currentUser } = useAuth();
   // Only use users property from UserContext
   const { users } = useUsers();
+  const navigate = useNavigate();
   
   // Check if user is super admin
   const isSuperAdmin = currentUser?.role === SUPER_ADMIN_ROLE;
@@ -55,14 +57,23 @@ export default function Dashboard() {
           <div className="bg-card border border-border/50 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <button className="w-full text-left p-3 rounded-lg border border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors">
+              <button 
+                onClick={() => navigate("/create-exam")}
+                className="w-full text-left p-3 rounded-lg border border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors"
+              >
                 Create New Exam
               </button>
-              <button className="w-full text-left p-3 rounded-lg border border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors">
+              <button 
+                onClick={() => navigate("/users-management")}
+                className="w-full text-left p-3 rounded-lg border border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors"
+              >
                 Manage Users
               </button>
               {isSuperAdmin && (
-                <button className="w-full text-left p-3 rounded-lg border border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors">
+                <button 
+                  onClick={() => navigate("/admin-management")}
+                  className="w-full text-left p-3 rounded-lg border border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
                   Organization Settings
                 </button>
               )}
