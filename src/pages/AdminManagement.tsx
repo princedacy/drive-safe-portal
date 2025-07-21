@@ -245,8 +245,10 @@ export default function AdminManagement() {
       if (!selectedOrganizationId || !token) return { data: [], total: 0, count: 0, limit: 10, page: 0, pages: 0 };
       
       console.log('Fetching admins for organization:', selectedOrganizationId, 'page:', adminCurrentPage);
-      // Use the correct super admin endpoint
-      const endpoint = `${API_URL}/super/organizations/${selectedOrganizationId}/users?page=${adminCurrentPage}&limit=${adminLimit}`;
+      // Use different endpoint based on user role
+      const endpoint = isSuperAdmin 
+        ? `${API_URL}/super/organizations/${selectedOrganizationId}/users?page=${adminCurrentPage}&limit=${adminLimit}`
+        : `${API_URL}/admin/organizations/${selectedOrganizationId}/users?page=${adminCurrentPage}&limit=${adminLimit}`;
         
       const response = await axios.get(endpoint, {
         headers: {
@@ -257,7 +259,7 @@ export default function AdminManagement() {
       console.log('Admins response:', response.data);
       return response.data as PaginatedResponse<User>;
     },
-    enabled: !!selectedOrganizationId && !!token && isSuperAdmin,
+    enabled: !!selectedOrganizationId && !!token,
   });
 
   const admins = adminsResponse?.data || [];
@@ -388,8 +390,10 @@ export default function AdminManagement() {
       console.log('Creating admin with data:', adminData);
       console.log('Organization ID:', data.organizationId);
       
-      // Use the super admin endpoint as provided
-      const endpoint = `${API_URL}/super/organizations/${data.organizationId}/users`;
+      // Use different endpoint based on user role
+      const endpoint = isSuperAdmin 
+        ? `${API_URL}/super/organizations/${data.organizationId}/users`
+        : `${API_URL}/admin/organizations/${data.organizationId}/users?page=0&limit=10`;
       
       return axios.post(endpoint, adminData, {
         headers: {
