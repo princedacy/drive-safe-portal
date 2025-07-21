@@ -393,7 +393,7 @@ export default function AdminManagement() {
       // Use different endpoint based on user role
       const endpoint = isSuperAdmin 
         ? `${API_URL}/super/organizations/${data.organizationId}/users`
-        : `${API_URL}/admin/organizations/${data.organizationId}/users?page=0&limit=10`;
+        : `${API_URL}/admin/organizations/${data.organizationId}/users`;
       
       return axios.post(endpoint, adminData, {
         headers: {
