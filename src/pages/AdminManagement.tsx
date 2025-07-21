@@ -49,7 +49,7 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from "@/components/ui/pagination";
-import { Plus, Eye } from "lucide-react";
+import { Plus, Eye, Edit } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -155,6 +155,9 @@ export default function AdminManagement() {
   const [adminCurrentPage, setAdminCurrentPage] = useState(0);
   const [adminLimit] = useState(10);
   const [adminTotalPages, setAdminTotalPages] = useState(1);
+  // Dialog states
+  const [isCreateOrgDialogOpen, setIsCreateOrgDialogOpen] = useState(false);
+  const [isUpdateOrgDialogOpen, setIsUpdateOrgDialogOpen] = useState(false);
   const { token, currentUser } = useAuth();
   
   // Check if user is super admin or organization admin
@@ -319,6 +322,7 @@ export default function AdminManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey: ['organizations']});
       organizationForm.reset();
+      setIsCreateOrgDialogOpen(false);
       toast({
         title: "Organization created successfully!",
       });
@@ -351,6 +355,7 @@ export default function AdminManagement() {
       queryClient.invalidateQueries({queryKey: ['organizations']});
       queryClient.invalidateQueries({queryKey: ['single-organization']});
       updateOrganizationForm.reset();
+      setIsUpdateOrgDialogOpen(false);
       toast({
         title: "Organization updated successfully!",
       });
@@ -451,6 +456,21 @@ export default function AdminManagement() {
 
   const handleAdminPageChange = (page: number) => {
     setAdminCurrentPage(page);
+  };
+
+  const handleEditOrganization = (organization: Organization) => {
+    setSelectedOrganization(organization);
+    const orgId = organization.id || organization._id;
+    setSelectedOrganizationId(orgId);
+    // Pre-fill the update form with current organization data
+    updateOrganizationForm.reset({
+      name: organization.name,
+      address: organization.address,
+      type: organization.type as "INSTITUTION" | "EMPLOYER" | "TESTING_CENTER",
+      phone: organization.phone,
+      email: organization.email,
+    });
+    setIsUpdateOrgDialogOpen(true);
   };
 
   // Helper function to get initials from name
@@ -568,9 +588,108 @@ export default function AdminManagement() {
           {/* Organizations Section - Only show for super admins */}
           {isSuperAdmin && (
           <Card className="shadow-md">
-            <CardHeader>
-              <CardTitle>Organizations</CardTitle>
-              <CardDescription>Manage organizations and their details.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle>Organizations</CardTitle>
+                <CardDescription>Manage organizations and their details.</CardDescription>
+              </div>
+              <Dialog open={isCreateOrgDialogOpen} onOpenChange={setIsCreateOrgDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Organization
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Create Organization</DialogTitle>
+                    <DialogDescription>
+                      Add a new organization to the system.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...organizationForm}>
+                    <form onSubmit={organizationForm.handleSubmit(createOrganization)} className="space-y-4">
+                      <FormField
+                        control={organizationForm.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Organization Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Organization Name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={organizationForm.control}
+                        name="address"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Address</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Organization Address" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={organizationForm.control}
+                        name="type"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Organization Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select organization type" />
+                                </SelectTrigger>
+                              </FormControl>
+                               <SelectContent>
+                                 <SelectItem value="TESTING_CENTER">Testing Center</SelectItem>
+                                 <SelectItem value="INSTITUTION">Institution</SelectItem>
+                                 <SelectItem value="EMPLOYER">Employer</SelectItem>
+                               </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={organizationForm.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Phone Number" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={organizationForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Email Address" type="email" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                       <Button type="submit" disabled={createOrganizationMutation.isPending} className="w-full">
+                         {createOrganizationMutation.isPending ? "Creating..." : "Create Organization"}
+                       </Button>
+                     </form>
+                   </Form>
+                 </DialogContent>
+               </Dialog>
             </CardHeader>
             <CardContent>
               {isOrganizationsLoading ? (
@@ -580,42 +699,53 @@ export default function AdminManagement() {
               ) : (
                 <div className="space-y-4">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Address</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="w-[150px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {organizationsData?.data && organizationsData.data.length > 0 ? (
-                        organizationsData.data.map((organization) => {
-                          const orgId = organization.id || organization._id;
-                          return (
-                            <TableRow key={orgId}>
-                              <TableCell>{organization.name}</TableCell>
-                              <TableCell>{organization.address}</TableCell>
-                              <TableCell>{formatDisplayText(organization.type)}</TableCell>
-                              <TableCell>
-                                <Button 
-                                  variant="outline" 
-                                  onClick={() => handleSelectOrganization(orgId)}
-                                  className={selectedOrganizationId === orgId ? "bg-primary text-primary-foreground" : ""}
-                                >
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  Select
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center">No organizations found</TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
+                     <TableHeader>
+                       <TableRow>
+                         <TableHead>Name</TableHead>
+                         <TableHead>Address</TableHead>
+                         <TableHead>Type</TableHead>
+                         <TableHead className="w-[200px]">Actions</TableHead>
+                       </TableRow>
+                     </TableHeader>
+                     <TableBody>
+                       {organizationsData?.data && organizationsData.data.length > 0 ? (
+                         organizationsData.data.map((organization) => {
+                           const orgId = organization.id || organization._id;
+                           return (
+                             <TableRow key={orgId}>
+                               <TableCell>{organization.name}</TableCell>
+                               <TableCell>{organization.address}</TableCell>
+                               <TableCell>{formatDisplayText(organization.type)}</TableCell>
+                               <TableCell>
+                                 <div className="flex items-center gap-2">
+                                   <Button 
+                                     variant="outline" 
+                                     size="sm"
+                                     onClick={() => handleSelectOrganization(orgId)}
+                                     className={selectedOrganizationId === orgId ? "bg-primary text-primary-foreground" : ""}
+                                   >
+                                     <Eye className="h-4 w-4 mr-1" />
+                                     View
+                                   </Button>
+                                   <Button 
+                                     variant="ghost" 
+                                     size="sm"
+                                     onClick={() => handleEditOrganization(organization)}
+                                     className="hover:bg-muted"
+                                   >
+                                     <Edit className="h-4 w-4" />
+                                   </Button>
+                                 </div>
+                               </TableCell>
+                             </TableRow>
+                           );
+                         })
+                       ) : (
+                         <TableRow>
+                           <TableCell colSpan={4} className="text-center">No organizations found</TableCell>
+                         </TableRow>
+                       )}
+                     </TableBody>
                   </Table>
 
                   {actualTotalPages > 1 && (
@@ -642,203 +772,98 @@ export default function AdminManagement() {
                     </Pagination>
                   )}
 
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Organization
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Create Organization</DialogTitle>
-                        <DialogDescription>
-                          Add a new organization to the system.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <Form {...organizationForm}>
-                        <form onSubmit={organizationForm.handleSubmit(createOrganization)} className="space-y-4">
-                          <FormField
-                            control={organizationForm.control}
-                            name="name"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Organization Name</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Organization Name" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={organizationForm.control}
-                            name="address"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Address</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Organization Address" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={organizationForm.control}
-                            name="type"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Organization Type</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select organization type" />
-                                    </SelectTrigger>
-                                  </FormControl>
+                   {/* Update Organization Dialog */}
+                   <Dialog open={isUpdateOrgDialogOpen} onOpenChange={setIsUpdateOrgDialogOpen}>
+                     <DialogContent className="sm:max-w-[425px]">
+                       <DialogHeader>
+                         <DialogTitle>Update Organization</DialogTitle>
+                         <DialogDescription>
+                           Update details for {selectedOrganization?.name}.
+                         </DialogDescription>
+                       </DialogHeader>
+                       <Form {...updateOrganizationForm}>
+                         <form onSubmit={updateOrganizationForm.handleSubmit(updateOrganization)} className="space-y-4">
+                           <FormField
+                             control={updateOrganizationForm.control}
+                             name="name"
+                             render={({ field }) => (
+                               <FormItem>
+                                 <FormLabel>Organization Name</FormLabel>
+                                 <FormControl>
+                                   <Input placeholder={selectedOrganization?.name} {...field} />
+                                 </FormControl>
+                                 <FormMessage />
+                               </FormItem>
+                             )}
+                           />
+                           <FormField
+                             control={updateOrganizationForm.control}
+                             name="address"
+                             render={({ field }) => (
+                               <FormItem>
+                                 <FormLabel>Address</FormLabel>
+                                 <FormControl>
+                                   <Input placeholder={selectedOrganization?.address} {...field} />
+                                 </FormControl>
+                                 <FormMessage />
+                               </FormItem>
+                             )}
+                           />
+                           <FormField
+                             control={updateOrganizationForm.control}
+                             name="type"
+                             render={({ field }) => (
+                               <FormItem>
+                                 <FormLabel>Organization Type</FormLabel>
+                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                   <FormControl>
+                                     <SelectTrigger>
+                                       <SelectValue placeholder="Select organization type" />
+                                     </SelectTrigger>
+                                   </FormControl>
                                    <SelectContent>
                                      <SelectItem value="TESTING_CENTER">Testing Center</SelectItem>
                                      <SelectItem value="INSTITUTION">Institution</SelectItem>
                                      <SelectItem value="EMPLOYER">Employer</SelectItem>
                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={organizationForm.control}
-                            name="phone"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Phone</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Phone Number" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={organizationForm.control}
-                            name="email"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Email</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Email Address" type="email" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                           <Button type="submit" disabled={createOrganizationMutation.isPending}>
-                             {createOrganizationMutation.isPending ? "Creating..." : "Create Organization"}
+                                 </Select>
+                                 <FormMessage />
+                               </FormItem>
+                             )}
+                           />
+                           <FormField
+                             control={updateOrganizationForm.control}
+                             name="phone"
+                             render={({ field }) => (
+                               <FormItem>
+                                 <FormLabel>Phone</FormLabel>
+                                 <FormControl>
+                                   <Input placeholder={selectedOrganization?.phone} {...field} />
+                                 </FormControl>
+                                 <FormMessage />
+                               </FormItem>
+                             )}
+                           />
+                           <FormField
+                             control={updateOrganizationForm.control}
+                             name="email"
+                             render={({ field }) => (
+                               <FormItem>
+                                 <FormLabel>Email</FormLabel>
+                                 <FormControl>
+                                   <Input placeholder={selectedOrganization?.email} type="email" {...field} />
+                                 </FormControl>
+                                 <FormMessage />
+                               </FormItem>
+                             )}
+                           />
+                           <Button type="submit" disabled={updateOrganizationMutation.isPending} className="w-full">
+                             {updateOrganizationMutation.isPending ? "Updating..." : "Update Organization"}
                            </Button>
                          </form>
                        </Form>
                      </DialogContent>
                    </Dialog>
-
-                   {/* Update Organization Dialog */}
-                   {selectedOrganization && (
-                     <Dialog>
-                       <DialogTrigger asChild>
-                         <Button variant="outline">
-                           Update Organization
-                         </Button>
-                       </DialogTrigger>
-                       <DialogContent className="sm:max-w-[425px]">
-                         <DialogHeader>
-                           <DialogTitle>Update Organization</DialogTitle>
-                           <DialogDescription>
-                             Update details for {selectedOrganization.name}.
-                           </DialogDescription>
-                         </DialogHeader>
-                         <Form {...updateOrganizationForm}>
-                           <form onSubmit={updateOrganizationForm.handleSubmit(updateOrganization)} className="space-y-4">
-                             <FormField
-                               control={updateOrganizationForm.control}
-                               name="name"
-                               render={({ field }) => (
-                                 <FormItem>
-                                   <FormLabel>Organization Name</FormLabel>
-                                   <FormControl>
-                                     <Input placeholder={selectedOrganization.name} {...field} />
-                                   </FormControl>
-                                   <FormMessage />
-                                 </FormItem>
-                               )}
-                             />
-                              <FormField
-                                control={updateOrganizationForm.control}
-                                name="address"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Address</FormLabel>
-                                    <FormControl>
-                                      <Input placeholder={selectedOrganization.address} {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <FormField
-                                control={updateOrganizationForm.control}
-                                name="type"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Organization Type</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                      <FormControl>
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select organization type" />
-                                        </SelectTrigger>
-                                      </FormControl>
-                                      <SelectContent>
-                                        <SelectItem value="TESTING_CENTER">Testing Center</SelectItem>
-                                        <SelectItem value="INSTITUTION">Institution</SelectItem>
-                                        <SelectItem value="EMPLOYER">Employer</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                             <FormField
-                               control={updateOrganizationForm.control}
-                               name="phone"
-                               render={({ field }) => (
-                                 <FormItem>
-                                   <FormLabel>Phone</FormLabel>
-                                   <FormControl>
-                                     <Input placeholder={selectedOrganization.phone} {...field} />
-                                   </FormControl>
-                                   <FormMessage />
-                                 </FormItem>
-                               )}
-                             />
-                             <FormField
-                               control={updateOrganizationForm.control}
-                               name="email"
-                               render={({ field }) => (
-                                 <FormItem>
-                                   <FormLabel>Email</FormLabel>
-                                   <FormControl>
-                                     <Input placeholder={selectedOrganization.email} type="email" {...field} />
-                                   </FormControl>
-                                   <FormMessage />
-                                 </FormItem>
-                               )}
-                             />
-                             <Button type="submit" disabled={updateOrganizationMutation.isPending}>
-                               {updateOrganizationMutation.isPending ? "Updating..." : "Update Organization"}
-                             </Button>
-                           </form>
-                         </Form>
-                       </DialogContent>
-                     </Dialog>
-                   )}
                 </div>
               )}
             </CardContent>
