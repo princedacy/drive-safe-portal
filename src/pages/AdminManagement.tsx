@@ -107,16 +107,19 @@ const organizationSchema = z.object({
 const updateOrganizationSchema = z.object({
   name: z.string().min(2, {
     message: "Organization name must be at least 2 characters.",
-  }).optional(),
-  status: z.enum(["ACTIVE", "INACTIVE"], {
-    message: "Please select a valid status.",
-  }).optional(),
+  }),
+  address: z.string().min(2, {
+    message: "Address must be at least 2 characters.",
+  }),
+  type: z.enum(["INSTITUTION", "EMPLOYER", "TESTING_CENTER"], {
+    message: "Please select an organization type.",
+  }),
   phone: z.string().min(10, {
     message: "Phone number must be at least 10 characters.",
-  }).optional(),
+  }),
   email: z.string().email({
     message: "Invalid email address.",
-  }).optional(),
+  }),
 });
 
 const adminSchema = z.object({
@@ -135,7 +138,7 @@ const adminSchema = z.object({
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
-  organizationId: z.string().uuid({
+  organizationId: z.string().min(1, {
     message: "Please select an organization.",
   }),
 });
@@ -279,7 +282,8 @@ export default function AdminManagement() {
     resolver: zodResolver(updateOrganizationSchema),
     defaultValues: {
       name: "",
-      status: "ACTIVE",
+      address: "",
+      type: "TESTING_CENTER",
       phone: "",
       email: "",
     },
@@ -766,27 +770,41 @@ export default function AdminManagement() {
                                  </FormItem>
                                )}
                              />
-                             <FormField
-                               control={updateOrganizationForm.control}
-                               name="status"
-                               render={({ field }) => (
-                                 <FormItem>
-                                   <FormLabel>Status</FormLabel>
-                                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                     <FormControl>
-                                       <SelectTrigger>
-                                         <SelectValue placeholder="Select status" />
-                                       </SelectTrigger>
-                                     </FormControl>
-                                     <SelectContent>
-                                       <SelectItem value="ACTIVE">Active</SelectItem>
-                                       <SelectItem value="INACTIVE">Inactive</SelectItem>
-                                     </SelectContent>
-                                   </Select>
-                                   <FormMessage />
-                                 </FormItem>
-                               )}
-                             />
+                              <FormField
+                                control={updateOrganizationForm.control}
+                                name="address"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Address</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder={selectedOrganization.address} {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={updateOrganizationForm.control}
+                                name="type"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Organization Type</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select organization type" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        <SelectItem value="TESTING_CENTER">Testing Center</SelectItem>
+                                        <SelectItem value="INSTITUTION">Institution</SelectItem>
+                                        <SelectItem value="EMPLOYER">Employer</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
                              <FormField
                                control={updateOrganizationForm.control}
                                name="phone"
