@@ -58,13 +58,13 @@ export default function Dashboard() {
             <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
             <div className="space-y-3">
               <button 
-                onClick={() => navigate("/create-exam")}
+                onClick={() => navigate("/exams/create")}
                 className="w-full text-left p-3 rounded-lg border border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors"
               >
                 Create New Exam
               </button>
               <button 
-                onClick={() => navigate("/users-management")}
+                onClick={() => navigate("/users")}
                 className="w-full text-left p-3 rounded-lg border border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors"
               >
                 Manage Users
