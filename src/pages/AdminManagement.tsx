@@ -315,17 +315,14 @@ export default function AdminManagement() {
         lastName: data.lastName,
         email: data.email,
         phone: data.phone,
-        password: data.password,
-        role: ADMIN_ROLE
+        password: data.password
       };
       
       console.log('Creating admin with data:', adminData);
       console.log('Organization ID:', data.organizationId);
       
-      // Use different endpoint based on user role
-      const endpoint = isSuperAdmin
-        ? `${API_URL}/super/organizations/${data.organizationId}/users`
-        : `${API_URL}/organizations/${data.organizationId}/users`;
+      // Use the super admin endpoint as provided
+      const endpoint = `${API_URL}/super/organizations/${data.organizationId}/users`;
       
       return axios.post(endpoint, adminData, {
         headers: {
