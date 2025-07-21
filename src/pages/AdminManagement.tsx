@@ -93,7 +93,7 @@ const organizationSchema = z.object({
   address: z.string().min(2, {
     message: "Address must be at least 2 characters.",
   }),
-  type: z.enum(["TESTING_CENTER", "SCHOOL", "COMPANY"], {
+  type: z.enum(["INSTITUTION", "EMPLOYER", "TESTING_CENTER"], {
     message: "Please select an organization type.",
   }),
   phone: z.string().min(10, {
@@ -102,6 +102,21 @@ const organizationSchema = z.object({
   email: z.string().email({
     message: "Invalid email address.",
   }),
+});
+
+const updateOrganizationSchema = z.object({
+  name: z.string().min(2, {
+    message: "Organization name must be at least 2 characters.",
+  }).optional(),
+  status: z.enum(["ACTIVE", "INACTIVE"], {
+    message: "Please select a valid status.",
+  }).optional(),
+  phone: z.string().min(10, {
+    message: "Phone number must be at least 10 characters.",
+  }).optional(),
+  email: z.string().email({
+    message: "Invalid email address.",
+  }).optional(),
 });
 
 const adminSchema = z.object({
@@ -259,6 +274,17 @@ export default function AdminManagement() {
     },
   });
 
+  // Update organization form
+  const updateOrganizationForm = useForm<z.infer<typeof updateOrganizationSchema>>({
+    resolver: zodResolver(updateOrganizationSchema),
+    defaultValues: {
+      name: "",
+      status: "ACTIVE",
+      phone: "",
+      email: "",
+    },
+  });
+
   // Admin form
   const adminForm = useForm<z.infer<typeof adminSchema>>({
     resolver: zodResolver(adminSchema),
@@ -297,6 +323,38 @@ export default function AdminManagement() {
       console.error("Error creating organization:", error);
       toast({
         title: "Failed to create organization.",
+        description: error.response?.data?.message || error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update organization mutation - only for super admins
+  const updateOrganizationMutation = useMutation({
+    mutationFn: async ({ organizationId, data }: { organizationId: string; data: z.infer<typeof updateOrganizationSchema> }) => {
+      if (!token || !isSuperAdmin) {
+        throw new Error("No authentication token found or insufficient permissions");
+      }
+      
+      return axios.put(`${API_URL}/super/organizations/${organizationId}`, data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ['organizations']});
+      queryClient.invalidateQueries({queryKey: ['single-organization']});
+      updateOrganizationForm.reset();
+      toast({
+        title: "Organization updated successfully!",
+      });
+    },
+    onError: (error: any) => {
+      console.error("Error updating organization:", error);
+      toast({
+        title: "Failed to update organization.",
         description: error.response?.data?.message || error.message,
         variant: "destructive",
       });
@@ -353,6 +411,15 @@ export default function AdminManagement() {
   const createOrganization = async (data: z.infer<typeof organizationSchema>) => {
     try {
       createOrganizationMutation.mutate(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const updateOrganization = async (data: z.infer<typeof updateOrganizationSchema>) => {
+    if (!selectedOrganizationId) return;
+    try {
+      updateOrganizationMutation.mutate({ organizationId: selectedOrganizationId, data });
     } catch (error) {
       console.error(error);
     }
@@ -625,11 +692,11 @@ export default function AdminManagement() {
                                       <SelectValue placeholder="Select organization type" />
                                     </SelectTrigger>
                                   </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="TESTING_CENTER">Testing Center</SelectItem>
-                                    <SelectItem value="SCHOOL">School</SelectItem>
-                                    <SelectItem value="COMPANY">Company</SelectItem>
-                                  </SelectContent>
+                                   <SelectContent>
+                                     <SelectItem value="TESTING_CENTER">Testing Center</SelectItem>
+                                     <SelectItem value="INSTITUTION">Institution</SelectItem>
+                                     <SelectItem value="EMPLOYER">Employer</SelectItem>
+                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
                               </FormItem>
@@ -661,11 +728,99 @@ export default function AdminManagement() {
                               </FormItem>
                             )}
                           />
-                          <Button type="submit">Create Organization</Button>
-                        </form>
-                      </Form>
-                    </DialogContent>
-                  </Dialog>
+                           <Button type="submit" disabled={createOrganizationMutation.isPending}>
+                             {createOrganizationMutation.isPending ? "Creating..." : "Create Organization"}
+                           </Button>
+                         </form>
+                       </Form>
+                     </DialogContent>
+                   </Dialog>
+
+                   {/* Update Organization Dialog */}
+                   {selectedOrganization && (
+                     <Dialog>
+                       <DialogTrigger asChild>
+                         <Button variant="outline">
+                           Update Organization
+                         </Button>
+                       </DialogTrigger>
+                       <DialogContent className="sm:max-w-[425px]">
+                         <DialogHeader>
+                           <DialogTitle>Update Organization</DialogTitle>
+                           <DialogDescription>
+                             Update details for {selectedOrganization.name}.
+                           </DialogDescription>
+                         </DialogHeader>
+                         <Form {...updateOrganizationForm}>
+                           <form onSubmit={updateOrganizationForm.handleSubmit(updateOrganization)} className="space-y-4">
+                             <FormField
+                               control={updateOrganizationForm.control}
+                               name="name"
+                               render={({ field }) => (
+                                 <FormItem>
+                                   <FormLabel>Organization Name</FormLabel>
+                                   <FormControl>
+                                     <Input placeholder={selectedOrganization.name} {...field} />
+                                   </FormControl>
+                                   <FormMessage />
+                                 </FormItem>
+                               )}
+                             />
+                             <FormField
+                               control={updateOrganizationForm.control}
+                               name="status"
+                               render={({ field }) => (
+                                 <FormItem>
+                                   <FormLabel>Status</FormLabel>
+                                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                     <FormControl>
+                                       <SelectTrigger>
+                                         <SelectValue placeholder="Select status" />
+                                       </SelectTrigger>
+                                     </FormControl>
+                                     <SelectContent>
+                                       <SelectItem value="ACTIVE">Active</SelectItem>
+                                       <SelectItem value="INACTIVE">Inactive</SelectItem>
+                                     </SelectContent>
+                                   </Select>
+                                   <FormMessage />
+                                 </FormItem>
+                               )}
+                             />
+                             <FormField
+                               control={updateOrganizationForm.control}
+                               name="phone"
+                               render={({ field }) => (
+                                 <FormItem>
+                                   <FormLabel>Phone</FormLabel>
+                                   <FormControl>
+                                     <Input placeholder={selectedOrganization.phone} {...field} />
+                                   </FormControl>
+                                   <FormMessage />
+                                 </FormItem>
+                               )}
+                             />
+                             <FormField
+                               control={updateOrganizationForm.control}
+                               name="email"
+                               render={({ field }) => (
+                                 <FormItem>
+                                   <FormLabel>Email</FormLabel>
+                                   <FormControl>
+                                     <Input placeholder={selectedOrganization.email} type="email" {...field} />
+                                   </FormControl>
+                                   <FormMessage />
+                                 </FormItem>
+                               )}
+                             />
+                             <Button type="submit" disabled={updateOrganizationMutation.isPending}>
+                               {updateOrganizationMutation.isPending ? "Updating..." : "Update Organization"}
+                             </Button>
+                           </form>
+                         </Form>
+                       </DialogContent>
+                     </Dialog>
+                   )}
                 </div>
               )}
             </CardContent>
