@@ -78,12 +78,11 @@ export interface Organization {
 
 export interface PaginatedResponse<T> {
   data: T[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
+  total: number;
+  count: number;
+  limit: number;
+  page: number;
+  pages: number;
 }
 
 const organizationSchema = z.object({
@@ -169,7 +168,11 @@ export default function AdminManagement() {
         // If org admin gets direct organization data, wrap it in pagination format
         return {
           data: Array.isArray(response.data) ? response.data : [response.data],
-          meta: { total: 1, page: 0, limit: 10, totalPages: 1 }
+          total: 1,
+          count: 1, 
+          limit: 10,
+          page: 0,
+          pages: 1
         } as PaginatedResponse<Organization>;
       }
       
@@ -208,8 +211,8 @@ export default function AdminManagement() {
   }, [singleOrgData]);
 
   useEffect(() => {
-    if (organizationsData && organizationsData.meta) {
-      setTotalPages(organizationsData.meta.totalPages);
+    if (organizationsData && organizationsData.pages) {
+      setTotalPages(organizationsData.pages);
     }
   }, [organizationsData]);
 
@@ -470,7 +473,7 @@ export default function AdminManagement() {
     console.error("Organizations error:", organizationsError);
   }
 
-  const actualTotalPages = organizationsData?.meta?.totalPages || 1;
+  const actualTotalPages = organizationsData?.pages || 1;
 
   // Auto-select organization for org admins
   useEffect(() => {
