@@ -418,90 +418,88 @@ export default function CreateExam() {
                     />
                     
                     {watchQuestionTypes[index]?.type === "MULTIPLE_CHOICE" && (
-                      <div className="space-y-4">
-                        <FormLabel>Answer Options</FormLabel>
-                        
-                        {/* Correct option selection for multiple choice */}
-                        <FormField
-                          control={form.control}
-                          name={`questions.${index}.correctOption`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Correct Answer</FormLabel>
-                              <FormControl>
-                                <RadioGroup
-                                  onValueChange={(value) => field.onChange(parseInt(value))}
-                                  defaultValue={field.value?.toString()}
-                                  className="space-y-3"
-                                >
-                                  {(watchQuestionTypes[index]?.choices || []).map((_, choiceIndex) => (
-                                    <div key={choiceIndex} className="flex items-center space-x-2">
-                                      <RadioGroupItem value={choiceIndex.toString()} id={`q${index}-option-${choiceIndex}`} />
-                                      <FormLabel htmlFor={`q${index}-option-${choiceIndex}`}>
-                                        Option {choiceIndex + 1}
-                                      </FormLabel>
+                      <FormField
+                        control={form.control}
+                        name={`questions.${index}.correctOption`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Answer Options</FormLabel>
+                            <FormDescription className="mb-3">
+                              Click the radio button to select the correct answer
+                            </FormDescription>
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={(value) => field.onChange(parseInt(value))}
+                                value={field.value?.toString()}
+                                className="space-y-3"
+                              >
+                                {(watchQuestionTypes[index]?.choices || []).map((_, choiceIndex) => (
+                                  <div key={choiceIndex} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                                    <RadioGroupItem 
+                                      value={choiceIndex.toString()} 
+                                      id={`q${index}-option-${choiceIndex}`}
+                                      className="mt-0.5"
+                                    />
+                                    <div className="flex-1 flex items-center space-x-2">
+                                      <FormField
+                                        control={form.control}
+                                        name={`questions.${index}.choices.${choiceIndex}`}
+                                        render={({ field: choiceField }) => (
+                                          <FormControl>
+                                            <Input 
+                                              placeholder={`Option ${choiceIndex + 1}`} 
+                                              {...choiceField}
+                                              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
+                                            />
+                                          </FormControl>
+                                        )}
+                                      />
                                     </div>
-                                  ))}
-                                </RadioGroup>
-                              </FormControl>
-                              <FormDescription>
-                                Select which option is correct
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        {(watchQuestionTypes[index]?.choices || []).map((_, choiceIndex) => (
-                          <FormField
-                            key={choiceIndex}
-                            control={form.control}
-                            name={`questions.${index}.choices.${choiceIndex}`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-6">
-                                    {watchQuestionTypes[index]?.correctOption === choiceIndex && (
-                                      <Check className="h-4 w-4 text-green-500" />
+                                    {choiceIndex > 1 && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          const newChoices = [...(form.getValues(`questions.${index}.choices`) || [])];
+                                          newChoices.splice(choiceIndex, 1);
+                                          form.setValue(`questions.${index}.choices`, newChoices);
+                                          
+                                          // Adjust correct option if needed
+                                          const currentCorrect = form.getValues(`questions.${index}.correctOption`);
+                                          if (currentCorrect === choiceIndex) {
+                                            form.setValue(`questions.${index}.correctOption`, 0);
+                                          } else if (currentCorrect > choiceIndex) {
+                                            form.setValue(`questions.${index}.correctOption`, currentCorrect - 1);
+                                          }
+                                        }}
+                                        className="text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
                                     )}
                                   </div>
-                                  <FormControl>
-                                    <Input placeholder={`Option ${choiceIndex + 1}`} {...field} />
-                                  </FormControl>
-                                  {choiceIndex > 1 && (
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        const newChoices = [...(form.getValues(`questions.${index}.choices`) || [])];
-                                        newChoices.splice(choiceIndex, 1);
-                                        form.setValue(`questions.${index}.choices`, newChoices);
-                                      }}
-                                      className="text-destructive"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                </div>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        ))}
-                        
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const currentChoices = form.getValues(`questions.${index}.choices`) || [];
-                            form.setValue(`questions.${index}.choices`, [...currentChoices, ""]);
-                          }}
-                        >
-                          Add Option
-                        </Button>
-                      </div>
+                                ))}
+                              </RadioGroup>
+                            </FormControl>
+                            
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const currentChoices = form.getValues(`questions.${index}.choices`) || [];
+                                form.setValue(`questions.${index}.choices`, [...currentChoices, ""]);
+                              }}
+                              className="mt-3"
+                            >
+                              <Plus className="mr-2 h-4 w-4" />
+                              Add Option
+                            </Button>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     )}
                     
                     {/* Correct answer field for open-ended questions */}
