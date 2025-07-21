@@ -151,7 +151,7 @@ export default function AdminManagement() {
       // Use different endpoint based on user role
       const endpoint = isSuperAdmin 
         ? `${API_URL}/super/organizations?page=${currentPage}&limit=${limit}`
-        : `${API_URL}/admin/organizations`; // Organization admin sees only their org
+        : `${API_URL}/organizations`; // Organization admin sees only their org
       
       const response = await axios.get(endpoint, {
         headers: {
@@ -184,7 +184,7 @@ export default function AdminManagement() {
       // Use different endpoint based on user role
       const endpoint = isSuperAdmin 
         ? `${API_URL}/super/organizations/${selectedOrganizationId}`
-        : `${API_URL}/admin/organizations/${selectedOrganizationId}`;
+        : `${API_URL}/organizations/${selectedOrganizationId}`;
         
       const response = await axios.get(endpoint, {
         headers: {
@@ -219,7 +219,7 @@ export default function AdminManagement() {
       // Use different endpoint based on user role
       const endpoint = isSuperAdmin
         ? `${API_URL}/super/organizations/${selectedOrganizationId}/users?page=0&limit=100`
-        : `${API_URL}/admin/organizations/${selectedOrganizationId}/users?page=0&limit=100`;
+        : `${API_URL}/organizations/${selectedOrganizationId}/users?page=0&limit=100`;
         
       const response = await axios.get(endpoint, {
         headers: {
@@ -272,7 +272,7 @@ export default function AdminManagement() {
         throw new Error("No authentication token found or insufficient permissions");
       }
       
-      return axios.post(`${API_URL}/super/organizations`, data, {
+      return axios.post(`${API_URL}/super/organizations/`, data, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -318,7 +318,7 @@ export default function AdminManagement() {
       // Use different endpoint based on user role
       const endpoint = isSuperAdmin
         ? `${API_URL}/super/organizations/${data.organizationId}/users`
-        : `${API_URL}/admin/organizations/${data.organizationId}/users`;
+        : `${API_URL}/organizations/${data.organizationId}/users`;
       
       return axios.post(endpoint, adminData, {
         headers: {
