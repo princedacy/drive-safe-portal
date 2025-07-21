@@ -58,7 +58,8 @@ import { ADMIN_ROLE } from "@/types/UserRole";
 
 // Define the types for the data
 export interface User {
-  id: string;
+  id?: string;
+  _id?: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -220,13 +221,11 @@ export default function AdminManagement() {
   const { data: adminsResponse, isLoading: isAdminLoading, error: adminError, refetch: refetchAdmins } = useQuery({
     queryKey: ['admins', selectedOrganizationId, adminCurrentPage, adminLimit],
     queryFn: async () => {
-      if (!selectedOrganizationId || !token) return { data: [], meta: { total: 0, page: 0, limit: 10, totalPages: 0 } };
+      if (!selectedOrganizationId || !token) return { data: [], total: 0, count: 0, limit: 10, page: 0, pages: 0 };
       
       console.log('Fetching admins for organization:', selectedOrganizationId, 'page:', adminCurrentPage);
-      // Use different endpoint based on user role
-      const endpoint = isSuperAdmin
-        ? `${API_URL}/super/organizations/${selectedOrganizationId}/users?page=${adminCurrentPage}&limit=${adminLimit}`
-        : `${API_URL}/organizations/${selectedOrganizationId}/users?page=${adminCurrentPage}&limit=${adminLimit}`;
+      // Use the correct super admin endpoint
+      const endpoint = `${API_URL}/super/organizations/${selectedOrganizationId}/users?page=${adminCurrentPage}&limit=${adminLimit}`;
         
       const response = await axios.get(endpoint, {
         headers: {
@@ -235,32 +234,18 @@ export default function AdminManagement() {
       });
       
       console.log('Admins response:', response.data);
-      // Handle both array response and paginated response
-      if (Array.isArray(response.data)) {
-        return { 
-          data: response.data, 
-          meta: { 
-            total: response.data.length, 
-            page: adminCurrentPage, 
-            limit: adminLimit, 
-            totalPages: Math.ceil(response.data.length / adminLimit) 
-          } 
-        };
-      } else {
-        return response.data;
-      }
+      return response.data as PaginatedResponse<User>;
     },
-    enabled: !!selectedOrganizationId && !!token,
+    enabled: !!selectedOrganizationId && !!token && isSuperAdmin,
   });
 
   const admins = adminsResponse?.data || [];
-  const adminsMeta = adminsResponse?.meta;
-
+  
   useEffect(() => {
-    if (adminsMeta) {
-      setAdminTotalPages(adminsMeta.totalPages);
+    if (adminsResponse?.pages) {
+      setAdminTotalPages(adminsResponse.pages);
     }
-  }, [adminsMeta]);
+  }, [adminsResponse]);
 
   // Organization form
   const organizationForm = useForm<z.infer<typeof organizationSchema>>({
