@@ -133,6 +133,10 @@ export default function AdminManagement() {
   const [currentPage, setCurrentPage] = useState(0);
   const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+  // Admin pagination state
+  const [adminCurrentPage, setAdminCurrentPage] = useState(0);
+  const [adminLimit] = useState(10);
+  const [adminTotalPages, setAdminTotalPages] = useState(1);
   const { token, currentUser } = useAuth();
   
   // Check if user is super admin or organization admin
@@ -209,17 +213,17 @@ export default function AdminManagement() {
     }
   }, [organizationsData]);
 
-  // Fetch admins with updated endpoint - fix the response handling
+  // Fetch admins with updated endpoint and pagination
   const { data: adminsResponse, isLoading: isAdminLoading, error: adminError, refetch: refetchAdmins } = useQuery({
-    queryKey: ['admins', selectedOrganizationId],
+    queryKey: ['admins', selectedOrganizationId, adminCurrentPage, adminLimit],
     queryFn: async () => {
-      if (!selectedOrganizationId || !token) return { data: [] };
+      if (!selectedOrganizationId || !token) return { data: [], meta: { total: 0, page: 0, limit: 10, totalPages: 0 } };
       
-      console.log('Fetching admins for organization:', selectedOrganizationId);
+      console.log('Fetching admins for organization:', selectedOrganizationId, 'page:', adminCurrentPage);
       // Use different endpoint based on user role
       const endpoint = isSuperAdmin
-        ? `${API_URL}/super/organizations/${selectedOrganizationId}/users?page=0&limit=100`
-        : `${API_URL}/organizations/${selectedOrganizationId}/users?page=0&limit=100`;
+        ? `${API_URL}/super/organizations/${selectedOrganizationId}/users?page=${adminCurrentPage}&limit=${adminLimit}`
+        : `${API_URL}/organizations/${selectedOrganizationId}/users?page=${adminCurrentPage}&limit=${adminLimit}`;
         
       const response = await axios.get(endpoint, {
         headers: {
@@ -230,7 +234,15 @@ export default function AdminManagement() {
       console.log('Admins response:', response.data);
       // Handle both array response and paginated response
       if (Array.isArray(response.data)) {
-        return { data: response.data };
+        return { 
+          data: response.data, 
+          meta: { 
+            total: response.data.length, 
+            page: adminCurrentPage, 
+            limit: adminLimit, 
+            totalPages: Math.ceil(response.data.length / adminLimit) 
+          } 
+        };
       } else {
         return response.data;
       }
@@ -239,6 +251,13 @@ export default function AdminManagement() {
   });
 
   const admins = adminsResponse?.data || [];
+  const adminsMeta = adminsResponse?.meta;
+
+  useEffect(() => {
+    if (adminsMeta) {
+      setAdminTotalPages(adminsMeta.totalPages);
+    }
+  }, [adminsMeta]);
 
   // Organization form
   const organizationForm = useForm<z.infer<typeof organizationSchema>>({
@@ -369,8 +388,13 @@ export default function AdminManagement() {
   const handleSelectOrganization = (organizationId: string) => {
     console.log('Selecting organization:', organizationId);
     setSelectedOrganizationId(organizationId);
+    setAdminCurrentPage(0); // Reset admin pagination when selecting new organization
     adminForm.setValue('organizationId', organizationId);
     console.log('Set organizationId in form:', organizationId);
+  };
+
+  const handleAdminPageChange = (page: number) => {
+    setAdminCurrentPage(page);
   };
 
   // Helper function to get initials from name
@@ -378,7 +402,7 @@ export default function AdminManagement() {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
-  // Generate pagination items
+  // Generate pagination items for organizations
   const renderPaginationItems = () => {
     const items = [];
     const maxPagesToShow = 5;
@@ -400,6 +424,38 @@ export default function AdminManagement() {
           <PaginationLink 
             isActive={currentPage === i} 
             onClick={() => handlePageChange(i)}
+          >
+            {i + 1}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    
+    return items;
+  };
+
+  // Generate pagination items for admins
+  const renderAdminPaginationItems = () => {
+    const items = [];
+    const maxPagesToShow = 5;
+    
+    if (!adminTotalPages || adminTotalPages <= 0) {
+      return items;
+    }
+    
+    let startPage = Math.max(0, adminCurrentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(adminTotalPages - 1, startPage + maxPagesToShow - 1);
+    
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(0, endPage - maxPagesToShow + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink 
+            isActive={adminCurrentPage === i} 
+            onClick={() => handleAdminPageChange(i)}
           >
             {i + 1}
           </PaginationLink>
@@ -777,13 +833,38 @@ export default function AdminManagement() {
                             <TableCell colSpan={4} className="text-center">No admins found for this organization</TableCell>
                           </TableRow>
                         )}
-                      </TableBody>
-                    </Table>
-                  )}
-                </div>
-              ) : (
-                <p className="text-center text-muted-foreground py-8">Select an organization to view and manage admins.</p>
-              )}
+                       </TableBody>
+                     </Table>
+                   )}
+
+                   {/* Admin Pagination */}
+                   {adminTotalPages > 1 && (
+                     <Pagination className="mt-4">
+                       <PaginationContent>
+                         <PaginationItem>
+                           <PaginationPrevious 
+                             onClick={() => handleAdminPageChange(Math.max(0, adminCurrentPage - 1))}
+                             aria-disabled={adminCurrentPage === 0}
+                             className={adminCurrentPage === 0 ? "pointer-events-none opacity-50" : ""}
+                           />
+                         </PaginationItem>
+                         
+                         {renderAdminPaginationItems()}
+                         
+                         <PaginationItem>
+                           <PaginationNext 
+                             onClick={() => handleAdminPageChange(Math.min(adminTotalPages - 1, adminCurrentPage + 1))}
+                             aria-disabled={adminCurrentPage === adminTotalPages - 1}
+                             className={adminCurrentPage === adminTotalPages - 1 ? "pointer-events-none opacity-50" : ""}
+                           />
+                         </PaginationItem>
+                       </PaginationContent>
+                     </Pagination>
+                   )}
+                 </div>
+               ) : (
+                 <p className="text-center text-muted-foreground py-8">Select an organization to view and manage admins.</p>
+               )}
             </CardContent>
           </Card>
         </div>
