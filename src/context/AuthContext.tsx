@@ -18,7 +18,7 @@ interface AuthContextType {
   currentUser: User | null;
   isLoading: boolean;
   isAuthenticated: boolean; // Add this property
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   signup: (firstName: string, lastName: string, phone: string, email: string, role: UserRole, password: string) => Promise<void>;
   logout: () => Promise<void>;
   magicLinkLogin: (token: string) => Promise<void>;
@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     setIsLoading(true);
     console.log('Login attempt with:', { email, password });
     try {
@@ -110,6 +110,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Save user data
         setCurrentUser(user);
         localStorage.setItem("ikizaminiUser", JSON.stringify(user));
+        
+        // Return user data for immediate use
+        return user;
       } catch (error) {
         console.error('Error extracting user data from token:', error);
         throw new Error('Failed to process user data after login');

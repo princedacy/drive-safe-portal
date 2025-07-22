@@ -2,34 +2,36 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { ADMIN_ROLE, SUPER_ADMIN_ROLE, USER_ROLE } from "@/types/UserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useRoleNavigation } from "@/hooks/use-role-navigation";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login, isLoading } = useAuth();
   const { toast } = useToast();
-  const { navigateByRole } = useRoleNavigation();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      await login(email, password);
+      const userData = await login(email, password);
       toast({
         title: "Login successful",
         description: "You have successfully logged in.",
       });
       
-      // Small delay to ensure state is updated before navigation
-      setTimeout(() => {
-        navigateByRole();
-      }, 100);
+      // Navigate based on user role directly from login response
+      if (userData?.role === USER_ROLE) {
+        navigate("/my-exams");
+      } else if (userData?.role === ADMIN_ROLE || userData?.role === SUPER_ADMIN_ROLE) {
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       console.error("Login error details:", error);
       toast({
