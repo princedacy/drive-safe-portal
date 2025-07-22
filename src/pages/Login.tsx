@@ -26,8 +26,10 @@ export default function Login() {
         description: "You have successfully logged in.",
       });
       
-      // Use the role navigation hook to redirect based on user role
-      navigateByRole();
+      // Small delay to ensure state is updated before navigation
+      setTimeout(() => {
+        navigateByRole();
+      }, 100);
     } catch (error: any) {
       console.error("Login error details:", error);
       toast({
