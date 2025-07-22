@@ -364,27 +364,37 @@ export function ExamProvider({ children }: { children: ReactNode }) {
       
       console.log('Create exam response:', response.data);
       
-      // Add the newly created exam to our state
-      if (response.data) {
-        const newExam: Exam = {
-          id: response.data.id || response.data._id,
-          title: response.data.title,
-          description: response.data.description,
-          questions: (response.data.questions || []).map((question: any) => ({
-            id: question.id || question._id,
-            title: question.title,
-            description: question.description || "",
-            type: question.type,
-            choices: question.choices || [],
-            answer: question.answer,
-          })),
-          createdAt: response.data.createdAt,
-        };
-        
-        setExams(prevExams => [...prevExams, newExam]);
-      }
+      // Handle the response properly - could be nested in data property
+      const examResponse = response.data.data || response.data;
       
-      return response.data;
+      // Create a properly formatted exam object from the response
+      const newExam: Exam = {
+        id: examResponse._id || examResponse.id,
+        title: examResponse.title || examData.title,
+        description: examResponse.description || examData.description,
+        questions: (examResponse.questions || []).map((question: any) => ({
+          id: question._id || question.id,
+          title: question.title,
+          description: question.description || "",
+          type: question.type,
+          choices: question.choices || [],
+          answer: question.answer,
+        })),
+        timeLimit: examResponse.timeLimit || examData.timeLimit || 30,
+        passingScore: examResponse.passingScore || examData.passingScore || 70,
+        createdAt: examResponse.createdAt || new Date().toISOString(),
+      };
+      
+      console.log('Adding new exam to state:', newExam);
+      
+      // Add the newly created exam to our local state immediately
+      setExams(prevExams => {
+        const updatedExams = [...prevExams, newExam];
+        console.log('Updated exams state:', updatedExams);
+        return updatedExams;
+      });
+      
+      return examResponse;
     } catch (error) {
       console.error('Error creating exam:', error);
       throw error;
